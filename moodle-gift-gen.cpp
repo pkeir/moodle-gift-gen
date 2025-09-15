@@ -348,7 +348,8 @@ std::vector<std::string> uploadFiles(const std::vector<std::string> &filenames,
 void runQuizGeneration(const int num_questions,
                        const std::vector<std::string> &file_ids,
                        const std::string &api_key,
-                       const std::string &output_file = "")
+                       const std::string &output_file = "",
+                       const bool interactive = false)
 {
   json schema = generateQuizSchema(num_questions);
   std::string query =
@@ -426,28 +427,40 @@ void runQuizGeneration(const int num_questions,
 
     std::string gift_output = convertToGiftFormat(quiz_data);
 
-    if (!output_file.empty())
+    if (interactive)
     {
-      std::ofstream file(output_file);
-      if (!file.is_open())
-      {
-        throw std::runtime_error("Unable to open output file: " + output_file);
-      }
-      file << gift_output;
-      file.close();
-      std::cout << "GIFT quiz saved to: " << output_file << std::endl;
+      std::cout << "\n" << gift_output << std::endl;
+
+      std::cout << "Is this output good enough? (y/n): ";
+      std::string user_input;
+      std::getline(std::cin, user_input);
+
+      satisfied = (user_input == "y" || user_input == "Y" ||
+                   user_input == "yes" || user_input == "Yes");
     }
     else
     {
-      std::cout << "\n" << gift_output << std::endl;
+      satisfied = true; // Exit after first generation
     }
 
-    std::cout << "Is this output good enough? (y/n): ";
-    std::string user_input;
-    std::getline(std::cin, user_input);
-
-    satisfied = (user_input == "y" || user_input == "Y" ||
-                 user_input == "yes" || user_input == "Yes");
+    if (satisfied)
+    {
+      if (!output_file.empty())
+      {
+        std::ofstream file(output_file);
+        if (!file.is_open())
+        {
+          throw std::runtime_error("Unable to open output file: " + output_file);
+        }
+        file << gift_output;
+        file.close();
+        std::cout << "GIFT quiz saved to: " << output_file << std::endl;
+      }
+      else if (!interactive)
+      {
+        std::cout << gift_output << std::endl;
+      }
+    }
   }
 }
 
@@ -549,12 +562,13 @@ void printUsage(const char *program_name)
             << "Options:\n"
             << "  --help               Show this help message and exit\n"
             << "  --gemini-api-key KEY Google Gemini API key\n"
+            << "  --interactive        Show GIFT output and ask for approval before saving\n"
             << "  --num-questions N    Number of questions to generate (default: 5)\n"
             << "  --output FILE        Write GIFT output to file instead of stdout\n"
             << "  --pdf-files FILES... PDF files to process (can be used multiple times)\n\n"
             << "Examples:\n"
             << "  " << program_name << " --pdf-files file1.pdf file2.pdf --num-questions 10\n"
-            << "  " << program_name << " --pdf-files a.pdf --num-questions 5 --pdf-files b.pdf c.pdf\n"
+            << "  " << program_name << " --interactive --pdf-files a.pdf --num-questions 5 --pdf-files b.pdf c.pdf\n"
             << "  " << program_name << " --gemini-api-key abc123 --output quiz.gift --pdf-files ../docs/*.pdf\n\n"
             << "Environment:\n"
             << "  GEMINI_API_KEY       API key for Google Gemini (if --gemini-api-key not used)\n";
@@ -567,6 +581,7 @@ struct CommandLineArgs
   std::vector<std::string> pdf_files;
   std::string gemini_api_key;
   std::string output_file;
+  bool interactive = false;
 };
 
 CommandLineArgs parseCommandLine(int argc, char *argv[])
@@ -619,6 +634,10 @@ CommandLineArgs parseCommandLine(int argc, char *argv[])
       }
       args.output_file = argv[i + 1];
       ++i; // Skip the value
+    }
+    else if (arg == "--interactive")
+    {
+      args.interactive = true;
     }
     else if (arg == "--pdf-files")
     {
@@ -686,7 +705,7 @@ int main(int argc, char *argv[])
               << args.pdf_files.size() << " PDF files." << std::endl;
 
     std::vector<std::string> file_ids = uploadFiles(args.pdf_files, api_key);
-    runQuizGeneration(args.num_questions, file_ids, api_key, args.output_file);
+    runQuizGeneration(args.num_questions, file_ids, api_key, args.output_file, args.interactive);
     cleanupFiles(file_ids, api_key);
   }
   catch (const std::exception &e)
