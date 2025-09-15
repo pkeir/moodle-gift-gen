@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-set(n gift-gen)
+set(n moodle-gift-gen)
 project(${n})
 
 set(CMAKE_CXX_STANDARD 17)

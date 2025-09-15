@@ -1,11 +1,12 @@
-# GiftGen
+# Moodle Gift Generator
 
-Generate Moodle GIFT Multiple Choice Questions (MCQs) using Large Language Models (LLMs)
+Generate Moodle GIFT Multiple Choice Questions (MCQs) using a Large Language
+Model (LLM).
 
 ## Building
 
-GiftGen relies on libcurl for network transfer via HTTPS; and the Nlohmann
-JSON library for parsing and generation of JSO packets.
+The Moodle Gift Generator relies on libcurl for network transfer via HTTPS; and
+the Nlohmann JSON library for parsing and generation of JSO packets.
 
 * [libcurl](https://curl.se/libcurl)
 * [Nlohmann JSON](https://github.com/nlohmann/json)
