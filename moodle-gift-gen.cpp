@@ -361,9 +361,42 @@ void runQuizGeneration(const int num_questions,
   while (!satisfied)
   {
     std::string response = queryGemini(file_ids, query, schema, api_key);
-    std::cout << "Gemini response: " << response << std::endl;
+    //std::cout << "Gemini response: " << response << std::endl;
 
     json response_json = json::parse(response);
+
+    // Check for error responses
+    if (response_json.contains("error"))
+    {
+      auto &error = response_json["error"];
+      std::string error_msg = "Gemini API Error";
+
+      if (error.contains("code"))
+      {
+        error_msg += " " + std::to_string(error["code"].get<int>());
+      }
+
+      if (error.contains("message"))
+      {
+        error_msg += ": " + error["message"].get<std::string>();
+      }
+
+      if (error.contains("status"))
+      {
+        error_msg += " (Status: " + error["status"].get<std::string>() + ")";
+      }
+
+      std::cerr << error_msg << std::endl;
+      std::cout << "Try again? (y/n): ";
+      std::string user_input;
+      std::getline(std::cin, user_input);
+
+      if (user_input != "y" && user_input != "Y" && user_input != "yes" && user_input != "Yes")
+      {
+        throw std::runtime_error("User chose to exit after API error");
+      }
+      continue; // Skip to next iteration of the while loop
+    }
 
     // Handle different response formats
     json quiz_data;
@@ -436,6 +469,7 @@ void cleanupFiles(const std::vector<std::string> &file_ids,
   }
 
   std::vector<CURL *> handles(file_ids.size());
+  std::vector<WriteResult> results(file_ids.size());
 
   // Setup all deletion handles
   for (size_t i = 0; i < file_ids.size(); ++i)
@@ -453,6 +487,8 @@ void cleanupFiles(const std::vector<std::string> &file_ids,
 
     curl_easy_setopt(handles[i], CURLOPT_URL, url.c_str());
     curl_easy_setopt(handles[i], CURLOPT_CUSTOMREQUEST, "DELETE");
+    curl_easy_setopt(handles[i], CURLOPT_WRITEFUNCTION, WriteCallback);
+    curl_easy_setopt(handles[i], CURLOPT_WRITEDATA, &results[i]);
 
     curl_multi_add_handle(multi_handle, handles[i]);
   }
