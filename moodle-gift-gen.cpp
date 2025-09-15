@@ -353,14 +353,23 @@ void runQuizGeneration(const int num_questions,
                        const std::string &api_key,
                        const std::string &output_file = "",
                        const bool interactive = false,
-                       const bool quiet = false)
+                       const bool quiet = false,
+                       const std::string &custom_prompt = "")
 {
   json schema = generateQuizSchema(num_questions);
-  std::string query =
-      "From both the text and images in these pdf files, generate " +
-      std::to_string(num_questions) +
-      " multiple choice questions formatted according to the provided json "
-      "schema.";
+  std::string query;
+
+  if (!custom_prompt.empty())
+  {
+    query = custom_prompt;
+  }
+  else
+  {
+    query = "From both the text and images in these pdf files, generate " +
+            std::to_string(num_questions) +
+            " multiple choice questions formatted according to the provided json "
+            "schema.";
+  }
 
   bool satisfied = false;
   while (!satisfied)
@@ -574,13 +583,18 @@ void printUsage(const char *program_name)
             << "  --num-questions N    Number of questions to generate (default: 5)\n"
             << "  --output FILE        Write GIFT output to file instead of stdout\n"
             << "  --pdf-files FILES... PDF files to process (can be used multiple times)\n"
+            << "  --prompt \"TEXT\"       Custom query prompt (default: \"From both the text and \n"
+            << "                       images in these pdf files, generate N multiple choice \n"
+            << "                       questions formatted according to the provided json schema.\")\n"
             << "  --quiet              Suppress non-error output (except interactive prompts and final GIFT output)\n\n"
             << "Examples:\n"
             << "  " << program_name << " --pdf-files file1.pdf file2.pdf --num-questions 10\n"
             << "  " << program_name << " --interactive --pdf-files a.pdf --num-questions 5 --pdf-files b.pdf c.pdf\n"
+            << "  " << program_name << " --prompt \"Generate 7 C++ questions\" --num-questions 7\n"
             << "  " << program_name << " --quiet --gemini-api-key abc123 --output quiz.gift --pdf-files ../docs/*.pdf\n\n"
             << "Environment:\n"
-            << "  GEMINI_API_KEY       API key for Google Gemini (if --gemini-api-key not used)\n";
+            << "  GEMINI_API_KEY       API key for Google Gemini (if --gemini-api-key not used)\n\n"
+            << "Note: If --prompt and --num-questions specify different numbers, results may be unpredictable.\n";
 }
 
 
@@ -590,6 +604,7 @@ struct CommandLineArgs
   std::vector<std::string> pdf_files;
   std::string gemini_api_key;
   std::string output_file;
+  std::string custom_prompt;
   bool interactive = false;
   bool quiet = false;
 };
@@ -653,6 +668,15 @@ CommandLineArgs parseCommandLine(int argc, char *argv[])
     {
       args.quiet = true;
     }
+    else if (arg == "--prompt")
+    {
+      if (i + 1 >= argc)
+      {
+        throw std::runtime_error("--prompt requires a value");
+      }
+      args.custom_prompt = argv[i + 1];
+      ++i; // Skip the value
+    }
     else if (arg == "--pdf-files")
     {
       // Collect all following arguments until next option or end
@@ -691,9 +715,9 @@ int main(int argc, char *argv[])
   {
     CommandLineArgs args = parseCommandLine(argc, argv);
 
-    if (args.pdf_files.empty())
+    if (args.pdf_files.empty() && args.custom_prompt.empty())
     {
-      std::cerr << "Error: No PDF files specified. Use --pdf-files to specify files.\n" << std::endl;
+      std::cerr << "Error: No PDF files specified and no custom prompt provided. Use --pdf-files to specify files or --prompt for custom queries.\n" << std::endl;
       printUsage(argv[0]);
       return 1;
     }
@@ -716,12 +740,26 @@ int main(int argc, char *argv[])
     }
 
     if (!args.quiet)
-      std::cout << "Generating " << args.num_questions << " questions from "
-                << args.pdf_files.size() << " PDF files." << std::endl;
+    {
+      if (args.pdf_files.empty())
+        std::cout << "Generating " << args.num_questions << " questions using custom prompt." << std::endl;
+      else
+        std::cout << "Generating " << args.num_questions << " questions from "
+                  << args.pdf_files.size() << " PDF files." << std::endl;
+    }
 
-    std::vector<std::string> file_ids = uploadFiles(args.pdf_files, api_key, args.quiet);
-    runQuizGeneration(args.num_questions, file_ids, api_key, args.output_file, args.interactive, args.quiet);
-    cleanupFiles(file_ids, api_key, args.quiet);
+    std::vector<std::string> file_ids;
+    if (!args.pdf_files.empty())
+    {
+      file_ids = uploadFiles(args.pdf_files, api_key, args.quiet);
+    }
+
+    runQuizGeneration(args.num_questions, file_ids, api_key, args.output_file, args.interactive, args.quiet, args.custom_prompt);
+
+    if (!file_ids.empty())
+    {
+      cleanupFiles(file_ids, api_key, args.quiet);
+    }
   }
   catch (const std::exception &e)
   {
