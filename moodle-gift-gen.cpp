@@ -157,13 +157,15 @@ struct UploadHandle
 };
 
 std::vector<std::string> uploadFiles(const std::vector<std::string> &filenames,
-                                     const std::string &api_key)
+                                     const std::string &api_key,
+                                     const bool quiet = false)
 {
   if (filenames.empty())
     return {};
 
-  std::cout << "Starting parallel upload of " << filenames.size()
-            << " files to Gemini..." << std::endl;
+  if (!quiet)
+    std::cout << "Starting parallel upload of " << filenames.size()
+              << " files to Gemini..." << std::endl;
 
   CURLM *multi_handle = curl_multi_init();
   if (!multi_handle)
@@ -339,8 +341,9 @@ std::vector<std::string> uploadFiles(const std::vector<std::string> &filenames,
   }
   curl_multi_cleanup(multi_handle);
 
-  std::cout << "Successfully uploaded all " << filenames.size()
-            << " files to Gemini in parallel." << std::endl;
+  if (!quiet)
+    std::cout << "Successfully uploaded all " << filenames.size()
+              << " files to Gemini in parallel." << std::endl;
 
   return file_ids;
 }
@@ -349,7 +352,8 @@ void runQuizGeneration(const int num_questions,
                        const std::vector<std::string> &file_ids,
                        const std::string &api_key,
                        const std::string &output_file = "",
-                       const bool interactive = false)
+                       const bool interactive = false,
+                       const bool quiet = false)
 {
   json schema = generateQuizSchema(num_questions);
   std::string query =
@@ -454,7 +458,8 @@ void runQuizGeneration(const int num_questions,
         }
         file << gift_output;
         file.close();
-        std::cout << "GIFT quiz saved to: " << output_file << std::endl;
+        if (!quiet)
+          std::cout << "GIFT quiz saved to: " << output_file << std::endl;
       }
       else if (!interactive)
       {
@@ -465,13 +470,15 @@ void runQuizGeneration(const int num_questions,
 }
 
 void cleanupFiles(const std::vector<std::string> &file_ids,
-                  const std::string &api_key)
+                  const std::string &api_key,
+                  const bool quiet = false)
 {
   if (file_ids.empty())
     return;
 
-  std::cout << "Starting parallel deletion of " << file_ids.size()
-            << " files from Gemini..." << std::endl;
+  if (!quiet)
+    std::cout << "Starting parallel deletion of " << file_ids.size()
+              << " files from Gemini..." << std::endl;
 
   CURLM *multi_handle = curl_multi_init();
   if (!multi_handle)
@@ -551,9 +558,10 @@ void cleanupFiles(const std::vector<std::string> &file_ids,
   }
   curl_multi_cleanup(multi_handle);
 
-  std::cout << "All " << file_ids.size()
-            << " files have been successfully deleted from online storage."
-            << std::endl;
+  if (!quiet)
+    std::cout << "All " << file_ids.size()
+              << " files have been successfully deleted from online storage."
+              << std::endl;
 }
 
 void printUsage(const char *program_name)
@@ -565,11 +573,12 @@ void printUsage(const char *program_name)
             << "  --interactive        Show GIFT output and ask for approval before saving\n"
             << "  --num-questions N    Number of questions to generate (default: 5)\n"
             << "  --output FILE        Write GIFT output to file instead of stdout\n"
-            << "  --pdf-files FILES... PDF files to process (can be used multiple times)\n\n"
+            << "  --pdf-files FILES... PDF files to process (can be used multiple times)\n"
+            << "  --quiet              Suppress non-error output (except interactive prompts and final GIFT output)\n\n"
             << "Examples:\n"
             << "  " << program_name << " --pdf-files file1.pdf file2.pdf --num-questions 10\n"
             << "  " << program_name << " --interactive --pdf-files a.pdf --num-questions 5 --pdf-files b.pdf c.pdf\n"
-            << "  " << program_name << " --gemini-api-key abc123 --output quiz.gift --pdf-files ../docs/*.pdf\n\n"
+            << "  " << program_name << " --quiet --gemini-api-key abc123 --output quiz.gift --pdf-files ../docs/*.pdf\n\n"
             << "Environment:\n"
             << "  GEMINI_API_KEY       API key for Google Gemini (if --gemini-api-key not used)\n";
 }
@@ -582,6 +591,7 @@ struct CommandLineArgs
   std::string gemini_api_key;
   std::string output_file;
   bool interactive = false;
+  bool quiet = false;
 };
 
 CommandLineArgs parseCommandLine(int argc, char *argv[])
@@ -638,6 +648,10 @@ CommandLineArgs parseCommandLine(int argc, char *argv[])
     else if (arg == "--interactive")
     {
       args.interactive = true;
+    }
+    else if (arg == "--quiet")
+    {
+      args.quiet = true;
     }
     else if (arg == "--pdf-files")
     {
@@ -701,12 +715,13 @@ int main(int argc, char *argv[])
       api_key = api_key_env;
     }
 
-    std::cout << "Generating " << args.num_questions << " questions from "
-              << args.pdf_files.size() << " PDF files." << std::endl;
+    if (!args.quiet)
+      std::cout << "Generating " << args.num_questions << " questions from "
+                << args.pdf_files.size() << " PDF files." << std::endl;
 
-    std::vector<std::string> file_ids = uploadFiles(args.pdf_files, api_key);
-    runQuizGeneration(args.num_questions, file_ids, api_key, args.output_file, args.interactive);
-    cleanupFiles(file_ids, api_key);
+    std::vector<std::string> file_ids = uploadFiles(args.pdf_files, api_key, args.quiet);
+    runQuizGeneration(args.num_questions, file_ids, api_key, args.output_file, args.interactive, args.quiet);
+    cleanupFiles(file_ids, api_key, args.quiet);
   }
   catch (const std::exception &e)
   {
