@@ -345,10 +345,10 @@ std::vector<std::string> uploadFiles(const std::vector<std::string> &filenames,
   return file_ids;
 }
 
-void runQuizGeneration(const std::vector<std::string> &file_ids,
+void runQuizGeneration(const int num_questions,
+                       const std::vector<std::string> &file_ids,
                        const std::string &api_key)
 {
-  int num_questions = 5;
   json schema = generateQuizSchema(num_questions);
   std::string query =
       "From both the text and images in these pdf files, generate " +
@@ -491,12 +491,83 @@ void cleanupFiles(const std::vector<std::string> &file_ids,
             << std::endl;
 }
 
+struct CommandLineArgs
+{
+  int num_questions = 5;
+  std::vector<std::string> pdf_files;
+};
+
+CommandLineArgs parseCommandLine(int argc, char *argv[])
+{
+  CommandLineArgs args;
+
+  for (int i = 1; i < argc; ++i)
+  {
+    std::string arg = argv[i];
+
+    if (arg == "--num-questions")
+    {
+      if (i + 1 >= argc)
+      {
+        throw std::runtime_error("--num-questions requires a value");
+      }
+      try
+      {
+        args.num_questions = std::stoi(argv[i + 1]);
+        if (args.num_questions <= 0)
+        {
+          throw std::runtime_error("Number of questions must be positive");
+        }
+      }
+      catch (const std::invalid_argument &)
+      {
+        throw std::runtime_error("Invalid number for --num-questions: " + std::string(argv[i + 1]));
+      }
+      ++i; // Skip the value
+    }
+    else if (arg == "--pdf-files")
+    {
+      // Collect all following arguments until next option or end
+      ++i;
+      while (i < argc && argv[i][0] != '-')
+      {
+        args.pdf_files.push_back(argv[i]);
+        ++i;
+      }
+      --i; // Back up one since the loop will increment
+    }
+    else if (arg.substr(0, 2) == "--")
+    {
+      throw std::runtime_error("Unknown option: " + arg);
+    }
+    else
+    {
+      throw std::runtime_error("Unexpected argument: " + arg + ". Use --pdf-files to specify PDF files.");
+    }
+  }
+
+  return args;
+}
+
+void printUsage(const char *program_name)
+{
+  std::cout << "Usage: " << program_name << " [OPTIONS]\n\n"
+            << "Options:\n"
+            << "  --num-questions N    Number of questions to generate (default: 5)\n"
+            << "  --pdf-files FILES... PDF files to process (can be used multiple times)\n\n"
+            << "Examples:\n"
+            << "  " << program_name << " --pdf-files file1.pdf file2.pdf --num-questions 10\n"
+            << "  " << program_name << " --pdf-files a.pdf --num-questions 5 --pdf-files b.pdf c.pdf\n"
+            << "  " << program_name << " --num-questions 3 --pdf-files ../docs/*.pdf\n\n"
+            << "Environment:\n"
+            << "  GEMINI_API_KEY       Required API key for Google Gemini\n";
+}
+
 int main(int argc, char *argv[])
 {
   if (argc < 2)
   {
-    std::cerr << "Usage: " << argv[0] << " <pdf_file1> [pdf_file2] ..."
-              << std::endl;
+    printUsage(argv[0]);
     return 1;
   }
 
@@ -504,6 +575,15 @@ int main(int argc, char *argv[])
 
   try
   {
+    CommandLineArgs args = parseCommandLine(argc, argv);
+
+    if (args.pdf_files.empty())
+    {
+      std::cerr << "Error: No PDF files specified. Use --pdf-files to specify files.\n" << std::endl;
+      printUsage(argv[0]);
+      return 1;
+    }
+
     const char *api_key_env = std::getenv("GEMINI_API_KEY");
     if (!api_key_env)
     {
@@ -513,10 +593,11 @@ int main(int argc, char *argv[])
     }
     std::string api_key = api_key_env;
 
-    std::vector<std::string> filenames(argv + 1, argv + argc);
+    std::cout << "Generating " << args.num_questions << " questions from "
+              << args.pdf_files.size() << " PDF files." << std::endl;
 
-    std::vector<std::string> file_ids = uploadFiles(filenames, api_key);
-    runQuizGeneration(file_ids, api_key);
+    std::vector<std::string> file_ids = uploadFiles(args.pdf_files, api_key);
+    runQuizGeneration(args.num_questions, file_ids, api_key);
     cleanupFiles(file_ids, api_key);
   }
   catch (const std::exception &e)
