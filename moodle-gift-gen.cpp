@@ -491,6 +491,22 @@ void cleanupFiles(const std::vector<std::string> &file_ids,
             << std::endl;
 }
 
+void printUsage(const char *program_name)
+{
+  std::cout << "Usage: " << program_name << " [OPTIONS]\n\n"
+            << "Options:\n"
+            << "  --help               Show this help message and exit\n"
+            << "  --num-questions N    Number of questions to generate (default: 5)\n"
+            << "  --pdf-files FILES... PDF files to process (can be used multiple times)\n\n"
+            << "Examples:\n"
+            << "  " << program_name << " --pdf-files file1.pdf file2.pdf --num-questions 10\n"
+            << "  " << program_name << " --pdf-files a.pdf --num-questions 5 --pdf-files b.pdf c.pdf\n"
+            << "  " << program_name << " --num-questions 3 --pdf-files ../docs/*.pdf\n\n"
+            << "Environment:\n"
+            << "  GEMINI_API_KEY       Required API key for Google Gemini\n";
+}
+
+
 struct CommandLineArgs
 {
   int num_questions = 5;
@@ -505,7 +521,12 @@ CommandLineArgs parseCommandLine(int argc, char *argv[])
   {
     std::string arg = argv[i];
 
-    if (arg == "--num-questions")
+    if (arg == "--help")
+    {
+      printUsage(argv[0]);
+      exit(0);
+    }
+    else if (arg == "--num-questions")
     {
       if (i + 1 >= argc)
       {
@@ -547,20 +568,6 @@ CommandLineArgs parseCommandLine(int argc, char *argv[])
   }
 
   return args;
-}
-
-void printUsage(const char *program_name)
-{
-  std::cout << "Usage: " << program_name << " [OPTIONS]\n\n"
-            << "Options:\n"
-            << "  --num-questions N    Number of questions to generate (default: 5)\n"
-            << "  --pdf-files FILES... PDF files to process (can be used multiple times)\n\n"
-            << "Examples:\n"
-            << "  " << program_name << " --pdf-files file1.pdf file2.pdf --num-questions 10\n"
-            << "  " << program_name << " --pdf-files a.pdf --num-questions 5 --pdf-files b.pdf c.pdf\n"
-            << "  " << program_name << " --num-questions 3 --pdf-files ../docs/*.pdf\n\n"
-            << "Environment:\n"
-            << "  GEMINI_API_KEY       Required API key for Google Gemini\n";
 }
 
 int main(int argc, char *argv[])
