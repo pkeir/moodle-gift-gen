@@ -12,9 +12,9 @@ the Nlohmann JSON library for parsing and generation of JSO packets.
 * [Nlohmann JSON](https://github.com/nlohmann/json)
 
 Your favourite package manager can install these two dependencies.
-Use CMake to configure; then build the `gift-gen` executable.
+Use CMake to configure; then build the `moodle-gift-gen` executable.
 
-**Linux**
+**Ubuntu (Debian)**
 
 Three libcurl APT packages are available; providing different TLS/SSL backends:
 OpenSSL, NSS, or GnuTLS; available in `libcurl4-openssl-dev`,

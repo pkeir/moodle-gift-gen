@@ -54,83 +54,6 @@ json generateQuizSchema(int num_questions)
   return schema;
 }
 
-std::string uploadPdfToGemini(const std::string &filepath,
-                              const std::string &api_key)
-{
-  CURL *curl;
-  CURLcode res;
-  WriteResult result;
-
-  curl = curl_easy_init();
-  if (!curl)
-  {
-    throw std::runtime_error("Failed to initialize CURL");
-  }
-
-  std::string url =
-      "https://generativelanguage.googleapis.com/upload/v1beta/files?key=" +
-      api_key;
-
-  curl_mime *mime;
-  curl_mimepart *part;
-
-  mime = curl_mime_init(curl);
-
-  // Add metadata part
-  json metadata = {
-      {"file",
-       {{"display_name", filepath.substr(filepath.find_last_of("/\\") + 1)}}}};
-
-  part = curl_mime_addpart(mime);
-  curl_mime_name(part, "metadata");
-  curl_mime_data(part, metadata.dump().c_str(), CURL_ZERO_TERMINATED);
-  curl_mime_type(part, "application/json; charset=utf-8");
-
-  // Add file part
-  part = curl_mime_addpart(mime);
-  curl_mime_name(part, "file");
-  curl_mime_filedata(part, filepath.c_str());
-  curl_mime_type(part, "application/pdf");
-
-  curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
-  curl_easy_setopt(curl, CURLOPT_MIMEPOST, mime);
-  curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
-  curl_easy_setopt(curl, CURLOPT_WRITEDATA, &result);
-
-  res = curl_easy_perform(curl);
-
-  long response_code;
-  curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
-
-  curl_mime_free(mime);
-  curl_easy_cleanup(curl);
-
-  if (res != CURLE_OK)
-  {
-    throw std::runtime_error("Failed to upload PDF: " +
-                             std::string(curl_easy_strerror(res)));
-  }
-
-  if (response_code != 200)
-  {
-    throw std::runtime_error("Upload failed with HTTP " +
-                             std::to_string(response_code));
-  }
-
-  // Parse response to get file ID
-  if (!result.data.empty())
-  {
-    json response = json::parse(result.data);
-    if (response.contains("file") && response["file"].contains("name"))
-    {
-      std::string file_name = response["file"]["name"];
-      return file_name.substr(file_name.find_last_of('/') + 1);
-    }
-  }
-
-  throw std::runtime_error("Failed to parse file ID from upload response");
-}
-
 std::string queryGemini(const std::vector<std::string> &file_ids,
                         const std::string &query, const json &schema,
                         const std::string &api_key,
@@ -254,24 +177,202 @@ void deleteFileFromGemini(const std::string &file_id,
   }
 }
 
+struct UploadHandle
+{
+  CURL *curl;
+  curl_mime *mime;
+  WriteResult result;
+  std::string filename;
+  std::string file_id;
+  bool completed;
+  long response_code;
+};
+
 std::vector<std::string> uploadFiles(const std::vector<std::string> &filenames,
                                      const std::string &api_key)
 {
-  std::vector<std::string> file_ids;
-  for (const auto &filename : filenames)
+  if (filenames.empty())
+    return {};
+
+  std::cout << "Starting parallel upload of " << filenames.size()
+            << " files to Gemini..." << std::endl;
+
+  CURLM *multi_handle = curl_multi_init();
+  if (!multi_handle)
   {
-    std::cout << "Uploading " << filename << " to Gemini..." << std::endl;
-    file_ids.push_back(uploadPdfToGemini(filename, api_key));
+    throw std::runtime_error("Failed to initialize CURL multi handle");
   }
 
-  std::cout << "Successfully uploaded ";
+  std::vector<UploadHandle> handles(filenames.size());
+  std::string url =
+      "https://generativelanguage.googleapis.com/upload/v1beta/files?key=" +
+      api_key;
+
+  // Setup all handles
   for (size_t i = 0; i < filenames.size(); ++i)
   {
-    if (i > 0)
-      std::cout << ", ";
-    std::cout << filenames[i];
+    handles[i].curl = curl_easy_init();
+    if (!handles[i].curl)
+    {
+      throw std::runtime_error("Failed to initialize CURL handle for " +
+                               filenames[i]);
+    }
+
+    handles[i].filename = filenames[i];
+    handles[i].completed = false;
+    handles[i].response_code = 0;
+
+    // Setup MIME data
+    handles[i].mime = curl_mime_init(handles[i].curl);
+
+    // Add metadata part
+    json metadata = {
+        {"file", {{"display_name",
+                   filenames[i].substr(filenames[i].find_last_of("/\\") + 1)}}}};
+
+    curl_mimepart *part = curl_mime_addpart(handles[i].mime);
+    curl_mime_name(part, "metadata");
+    curl_mime_data(part, metadata.dump().c_str(), CURL_ZERO_TERMINATED);
+    curl_mime_type(part, "application/json; charset=utf-8");
+
+    // Add file part
+    part = curl_mime_addpart(handles[i].mime);
+    curl_mime_name(part, "file");
+    curl_mime_filedata(part, filenames[i].c_str());
+    curl_mime_type(part, "application/pdf");
+
+    // Configure curl options
+    curl_easy_setopt(handles[i].curl, CURLOPT_URL, url.c_str());
+    curl_easy_setopt(handles[i].curl, CURLOPT_MIMEPOST, handles[i].mime);
+    curl_easy_setopt(handles[i].curl, CURLOPT_WRITEFUNCTION, WriteCallback);
+    curl_easy_setopt(handles[i].curl, CURLOPT_WRITEDATA,
+                     &handles[i].result);
+
+    // Add to multi handle
+    curl_multi_add_handle(multi_handle, handles[i].curl);
   }
-  std::cout << " to Gemini." << std::endl;
+
+  // Perform all transfers
+  int running_handles;
+  CURLMcode mc = curl_multi_perform(multi_handle, &running_handles);
+  if (mc != CURLM_OK)
+  {
+    throw std::runtime_error("curl_multi_perform failed: " +
+                             std::string(curl_multi_strerror(mc)));
+  }
+
+  // Wait for all transfers to complete
+  while (running_handles > 0)
+  {
+    fd_set fdread, fdwrite, fdexcep;
+    int maxfd = -1;
+    long curl_timeo = -1;
+
+    FD_ZERO(&fdread);
+    FD_ZERO(&fdwrite);
+    FD_ZERO(&fdexcep);
+
+    curl_multi_timeout(multi_handle, &curl_timeo);
+    if (curl_timeo < 0)
+      curl_timeo = 1000;
+
+    mc = curl_multi_fdset(multi_handle, &fdread, &fdwrite, &fdexcep, &maxfd);
+    if (mc != CURLM_OK)
+    {
+      throw std::runtime_error("curl_multi_fdset failed: " +
+                               std::string(curl_multi_strerror(mc)));
+    }
+
+    struct timeval timeout;
+    timeout.tv_sec = curl_timeo / 1000;
+    timeout.tv_usec = (curl_timeo % 1000) * 1000;
+
+    int rc = select(maxfd + 1, &fdread, &fdwrite, &fdexcep, &timeout);
+    if (rc < 0)
+    {
+      throw std::runtime_error("select() failed");
+    }
+
+    curl_multi_perform(multi_handle, &running_handles);
+  }
+
+  // Check results and extract file IDs
+  std::vector<std::string> file_ids;
+  file_ids.reserve(filenames.size());
+
+  for (size_t i = 0; i < handles.size(); ++i)
+  {
+    curl_easy_getinfo(handles[i].curl, CURLINFO_RESPONSE_CODE,
+                      &handles[i].response_code);
+
+    if (handles[i].response_code != 200)
+    {
+      std::string error_msg = "Upload failed for " + handles[i].filename +
+                              " with HTTP " +
+                              std::to_string(handles[i].response_code);
+
+      // Cleanup before throwing
+      for (auto &handle : handles)
+      {
+        curl_multi_remove_handle(multi_handle, handle.curl);
+        curl_mime_free(handle.mime);
+        curl_easy_cleanup(handle.curl);
+      }
+      curl_multi_cleanup(multi_handle);
+
+      throw std::runtime_error(error_msg);
+    }
+
+    // Parse response to get file ID
+    if (!handles[i].result.data.empty())
+    {
+      json response = json::parse(handles[i].result.data);
+      if (response.contains("file") && response["file"].contains("name"))
+      {
+        std::string file_name = response["file"]["name"];
+        file_ids.push_back(file_name.substr(file_name.find_last_of('/') + 1));
+      }
+      else
+      {
+        // Cleanup before throwing
+        for (auto &handle : handles)
+        {
+          curl_multi_remove_handle(multi_handle, handle.curl);
+          curl_mime_free(handle.mime);
+          curl_easy_cleanup(handle.curl);
+        }
+        curl_multi_cleanup(multi_handle);
+
+        throw std::runtime_error("Failed to parse file ID from upload response for " +
+                                 handles[i].filename);
+      }
+    }
+    else
+    {
+      // Cleanup before throwing
+      for (auto &handle : handles)
+      {
+        curl_multi_remove_handle(multi_handle, handle.curl);
+        curl_mime_free(handle.mime);
+        curl_easy_cleanup(handle.curl);
+      }
+      curl_multi_cleanup(multi_handle);
+
+      throw std::runtime_error("Empty response for " + handles[i].filename);
+    }
+  }
+
+  // Cleanup
+  for (auto &handle : handles)
+  {
+    curl_multi_remove_handle(multi_handle, handle.curl);
+    curl_mime_free(handle.mime);
+    curl_easy_cleanup(handle.curl);
+  }
+  curl_multi_cleanup(multi_handle);
+
+  std::cout << "Successfully uploaded all " << filenames.size()
+            << " files to Gemini in parallel." << std::endl;
 
   return file_ids;
 }
