@@ -145,38 +145,6 @@ std::string convertToGiftFormat(const json &quiz_data)
   return gift_output.str();
 }
 
-void deleteFileFromGemini(const std::string &file_id,
-                          const std::string &api_key)
-{
-  CURL *curl;
-  CURLcode res;
-
-  curl = curl_easy_init();
-  if (!curl)
-  {
-    std::cerr << "Failed to initialize CURL for file deletion" << std::endl;
-    return;
-  }
-
-  std::string url = "https://generativelanguage.googleapis.com/v1beta/files/" +
-                    file_id + "?key=" + api_key;
-
-  curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
-  curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "DELETE");
-
-  res = curl_easy_perform(curl);
-  curl_easy_cleanup(curl);
-
-  if (res == CURLE_OK)
-  {
-    std::cout << "Successfully deleted file: " << file_id << std::endl;
-  }
-  else
-  {
-    std::cerr << "Failed to delete file: " << file_id << std::endl;
-  }
-}
-
 struct UploadHandle
 {
   CURL *curl;
@@ -437,11 +405,89 @@ void runQuizGeneration(const std::vector<std::string> &file_ids,
 void cleanupFiles(const std::vector<std::string> &file_ids,
                   const std::string &api_key)
 {
-  for (const auto &file_id : file_ids)
+  if (file_ids.empty())
+    return;
+
+  std::cout << "Starting parallel deletion of " << file_ids.size()
+            << " files from Gemini..." << std::endl;
+
+  CURLM *multi_handle = curl_multi_init();
+  if (!multi_handle)
   {
-    deleteFileFromGemini(file_id, api_key);
+    std::cerr << "Failed to initialize CURL multi handle for cleanup"
+              << std::endl;
+    return;
   }
-  std::cout << "All files have been successfully deleted from online storage."
+
+  std::vector<CURL *> handles(file_ids.size());
+
+  // Setup all deletion handles
+  for (size_t i = 0; i < file_ids.size(); ++i)
+  {
+    handles[i] = curl_easy_init();
+    if (!handles[i])
+    {
+      std::cerr << "Failed to initialize CURL handle for deleting "
+                << file_ids[i] << std::endl;
+      continue;
+    }
+
+    std::string url = "https://generativelanguage.googleapis.com/v1beta/files/" +
+                      file_ids[i] + "?key=" + api_key;
+
+    curl_easy_setopt(handles[i], CURLOPT_URL, url.c_str());
+    curl_easy_setopt(handles[i], CURLOPT_CUSTOMREQUEST, "DELETE");
+
+    curl_multi_add_handle(multi_handle, handles[i]);
+  }
+
+  // Perform all deletions
+  int running_handles;
+  CURLMcode mc = curl_multi_perform(multi_handle, &running_handles);
+
+  // Wait for all transfers to complete
+  while (running_handles > 0)
+  {
+    fd_set fdread, fdwrite, fdexcep;
+    int maxfd = -1;
+    long curl_timeo = -1;
+
+    FD_ZERO(&fdread);
+    FD_ZERO(&fdwrite);
+    FD_ZERO(&fdexcep);
+
+    curl_multi_timeout(multi_handle, &curl_timeo);
+    if (curl_timeo < 0)
+      curl_timeo = 1000;
+
+    mc = curl_multi_fdset(multi_handle, &fdread, &fdwrite, &fdexcep, &maxfd);
+    if (mc != CURLM_OK)
+      break;
+
+    struct timeval timeout;
+    timeout.tv_sec = curl_timeo / 1000;
+    timeout.tv_usec = (curl_timeo % 1000) * 1000;
+
+    int rc = select(maxfd + 1, &fdread, &fdwrite, &fdexcep, &timeout);
+    if (rc < 0)
+      break;
+
+    curl_multi_perform(multi_handle, &running_handles);
+  }
+
+  // Check results and cleanup
+  for (size_t i = 0; i < handles.size(); ++i)
+  {
+    if (handles[i])
+    {
+      curl_multi_remove_handle(multi_handle, handles[i]);
+      curl_easy_cleanup(handles[i]);
+    }
+  }
+  curl_multi_cleanup(multi_handle);
+
+  std::cout << "All " << file_ids.size()
+            << " files have been successfully deleted from online storage."
             << std::endl;
 }
 
