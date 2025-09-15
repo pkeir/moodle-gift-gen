@@ -496,14 +496,15 @@ void printUsage(const char *program_name)
   std::cout << "Usage: " << program_name << " [OPTIONS]\n\n"
             << "Options:\n"
             << "  --help               Show this help message and exit\n"
+            << "  --gemini-api-key KEY Google Gemini API key\n"
             << "  --num-questions N    Number of questions to generate (default: 5)\n"
             << "  --pdf-files FILES... PDF files to process (can be used multiple times)\n\n"
             << "Examples:\n"
             << "  " << program_name << " --pdf-files file1.pdf file2.pdf --num-questions 10\n"
             << "  " << program_name << " --pdf-files a.pdf --num-questions 5 --pdf-files b.pdf c.pdf\n"
-            << "  " << program_name << " --num-questions 3 --pdf-files ../docs/*.pdf\n\n"
+            << "  " << program_name << " --gemini-api-key abc123 --num-questions 3 --pdf-files ../docs/*.pdf\n\n"
             << "Environment:\n"
-            << "  GEMINI_API_KEY       Required API key for Google Gemini\n";
+            << "  GEMINI_API_KEY       API key for Google Gemini (if --gemini-api-key not used)\n";
 }
 
 
@@ -511,6 +512,7 @@ struct CommandLineArgs
 {
   int num_questions = 5;
   std::vector<std::string> pdf_files;
+  std::string gemini_api_key;
 };
 
 CommandLineArgs parseCommandLine(int argc, char *argv[])
@@ -544,6 +546,15 @@ CommandLineArgs parseCommandLine(int argc, char *argv[])
       {
         throw std::runtime_error("Invalid number for --num-questions: " + std::string(argv[i + 1]));
       }
+      ++i; // Skip the value
+    }
+    else if (arg == "--gemini-api-key")
+    {
+      if (i + 1 >= argc)
+      {
+        throw std::runtime_error("--gemini-api-key requires a value");
+      }
+      args.gemini_api_key = argv[i + 1];
       ++i; // Skip the value
     }
     else if (arg == "--pdf-files")
@@ -591,14 +602,22 @@ int main(int argc, char *argv[])
       return 1;
     }
 
-    const char *api_key_env = std::getenv("GEMINI_API_KEY");
-    if (!api_key_env)
+    std::string api_key;
+    if (!args.gemini_api_key.empty())
     {
-      std::cerr << "Error: GEMINI_API_KEY environment variable not set"
-                << std::endl;
-      return 1;
+      api_key = args.gemini_api_key;
     }
-    std::string api_key = api_key_env;
+    else
+    {
+      const char *api_key_env = std::getenv("GEMINI_API_KEY");
+      if (!api_key_env)
+      {
+        std::cerr << "Error: GEMINI_API_KEY environment variable not set and --gemini-api-key not provided"
+                  << std::endl;
+        return 1;
+      }
+      api_key = api_key_env;
+    }
 
     std::cout << "Generating " << args.num_questions << " questions from "
               << args.pdf_files.size() << " PDF files." << std::endl;
