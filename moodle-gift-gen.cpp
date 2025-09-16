@@ -366,9 +366,10 @@ void runQuizGeneration(const int num_questions,
   else
   {
     query = "From both the text and images in these pdf files, generate " +
-            std::to_string(num_questions) +
-            " multiple choice questions formatted according to the provided json "
-            "schema.";
+              std::to_string(num_questions) +
+            " multiple choice questions formatted according to the provided"
+            " json schema. Ensure that any code excerpts in the generated"
+            " questions or answers are surrounded by a pair of backticks.";
   }
 
   bool satisfied = false;
@@ -583,10 +584,14 @@ void printUsage(const char *program_name)
             << "  --num-questions N    Number of questions to generate (default: 5)\n"
             << "  --output FILE        Write GIFT output to file instead of stdout\n"
             << "  --pdf-files FILES... PDF files to process (can be used multiple times)\n"
-            << "  --prompt \"TEXT\"       Custom query prompt (default: \"From both the text and \n"
+            << "  --prompt \"TEXT\"      Custom query prompt (default: \"From both the text and \n"
             << "                       images in these pdf files, generate N multiple choice \n"
-            << "                       questions formatted according to the provided json schema.\")\n"
-            << "  --quiet              Suppress non-error output (except interactive prompts and final GIFT output)\n\n"
+            << "                       questions formatted according to the provided json \n"
+            << "                       schema. Ensure that any code excerpts in the generated \n"
+            << "                       questions or answers are surrounded by a pair of \n"
+            << "                       backticks.\")\n"
+            << "  --quiet              Suppress non-error output (except interactive prompts \n"
+            << "                       and final GIFT output)\n\n"
             << "Examples:\n"
             << "  " << program_name << " --pdf-files file1.pdf file2.pdf --num-questions 10\n"
             << "  " << program_name << " --interactive --pdf-files a.pdf --num-questions 5 --pdf-files b.pdf c.pdf\n"
