@@ -122,6 +122,7 @@ std::string convertToGiftFormat(const json &quiz_data)
 
   for (const auto &question : quiz_data["questions"])
   {
+    gift_output << "[markdown]";
     gift_output << question["question"].get<std::string>() << " {\n";
 
     const auto &options = question["options"];
