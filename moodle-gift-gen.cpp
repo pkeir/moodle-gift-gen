@@ -35,7 +35,9 @@ json generateQuizSchema(int num_questions)
           {"items",
            {{"type", "object"},
             {"properties",
-             {{"question",
+             {{"title",
+               {{"type", "string"}, {"description", "A short title for the question"}}},
+              {"question",
                {{"type", "string"}, {"description", "The question text"}}},
               {"options",
                {{"type", "array"},
@@ -49,7 +51,7 @@ json generateQuizSchema(int num_questions)
                 {"description",
                  "Optional explanation for the correct answer"}}}}},
             {"required",
-             json::array({"question", "options", "correct_answer"})}}}}}}},
+             json::array({"title", "question", "options", "correct_answer"})}}}}}}},
       {"required", json::array({"questions"})}};
   return schema;
 }
@@ -122,6 +124,10 @@ std::string convertToGiftFormat(const json &quiz_data)
 
   for (const auto &question : quiz_data["questions"])
   {
+    if (question.contains("title"))
+    {
+      gift_output << "::" << question["title"].get<std::string>() << "::\n";
+    }
     gift_output << "[markdown]";
     gift_output << question["question"].get<std::string>() << " {\n";
 
@@ -370,7 +376,10 @@ void runQuizGeneration(const int num_questions,
               std::to_string(num_questions) +
             " multiple choice questions formatted according to the provided"
             " json schema. Ensure that any code excerpts in the generated"
-            " questions or answers are surrounded by a pair of backticks.";
+            " questions or answers are surrounded by a pair of backticks."
+            " Also ensure each question includes a short title: if a question"
+            " is based on content from a provided PDF, start the question"
+            " title using a short version of the PDF title.";
   }
 
   bool satisfied = false;
@@ -590,7 +599,10 @@ void printUsage(const char *program_name)
             << "                       questions formatted according to the provided json \n"
             << "                       schema. Ensure that any code excerpts in the generated \n"
             << "                       questions or answers are surrounded by a pair of \n"
-            << "                       backticks.\")\n"
+            << "                       backticks. Also ensure each question includes a short \n"
+            << "                       title: if a question is based on content from a provided \n"
+            << "                       PDF, start the question title using a short version of \n"
+            << "                       the PDF title.\")\n"
             << "  --quiet              Suppress non-error output (except interactive prompts \n"
             << "                       and final GIFT output)\n\n"
             << "Examples:\n"
