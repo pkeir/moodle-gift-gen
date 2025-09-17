@@ -118,6 +118,48 @@ std::string queryGemini(const std::vector<std::string> &file_ids,
   return result.data;
 }
 
+std::string escapeGiftText(const std::string &text)
+{
+  std::string result;
+  result.reserve(text.length() * 1.2); // Reserve extra space for escaping
+
+  bool in_code_segment = false;
+bool b = false;
+
+  for (size_t i = 0; i < text.length(); ++i)
+  {
+    char c = text[i];
+
+    // Check for backtick to toggle code segment state
+    if (c == '`')
+    {
+      in_code_segment = !in_code_segment;
+      result += c;
+      continue;
+    }
+
+    // If we're in a code segment, don't escape anything
+    if (in_code_segment)
+    {
+      result += c;
+      continue;
+    }
+
+    // Escape GIFT control characters when not in code segments
+    if (c == '{' || c == '}' || c == '#' || c == ':' || c == '~' || c == '=')
+    {
+      result += '\\';
+b=true;
+    }
+
+    result += c;
+  }
+
+if (b)
+std::cout << result << std::endl;
+  return result;
+}
+
 std::string convertToGiftFormat(const json &quiz_data)
 {
   std::stringstream gift_output;
@@ -126,10 +168,10 @@ std::string convertToGiftFormat(const json &quiz_data)
   {
     if (question.contains("title"))
     {
-      gift_output << "::" << question["title"].get<std::string>() << "::\n";
+      gift_output << "::" << escapeGiftText(question["title"].get<std::string>()) << "::\n";
     }
     gift_output << "[markdown]";
-    gift_output << question["question"].get<std::string>() << " {\n";
+    gift_output << escapeGiftText(question["question"].get<std::string>()) << " {\n";
 
     const auto &options = question["options"];
     int correct_index = question["correct_answer"].get<int>();
@@ -138,11 +180,11 @@ std::string convertToGiftFormat(const json &quiz_data)
     {
       if (i == correct_index)
       {
-        gift_output << "=" << options[i].get<std::string>() << "\n";
+        gift_output << "=" << escapeGiftText(options[i].get<std::string>()) << "\n";
       }
       else
       {
-        gift_output << "~" << options[i].get<std::string>() << "\n";
+        gift_output << "~" << escapeGiftText(options[i].get<std::string>()) << "\n";
       }
     }
 
