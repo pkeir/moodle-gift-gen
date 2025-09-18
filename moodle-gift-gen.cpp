@@ -25,7 +25,7 @@ size_t WriteCallback(void *contents, size_t size, size_t nmemb,
   return total_size;
 }
 
-json generateQuizSchema(int num_questions)
+json generateQuizSchema()
 {
   json schema = {
       {"type", "object"},
@@ -399,7 +399,7 @@ void runQuizGeneration(const int num_questions,
                        const bool interactive = false, const bool quiet = false,
                        const std::string &custom_prompt = "")
 {
-  json schema = generateQuizSchema(num_questions);
+  json schema = generateQuizSchema();
   std::string query;
 
   if (!custom_prompt.empty())
