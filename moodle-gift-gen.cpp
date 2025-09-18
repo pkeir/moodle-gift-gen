@@ -678,57 +678,46 @@ void cleanup_files(const std::vector<std::string> &file_ids,
 void print_usage(const char *program_name)
 {
   std::cout
-      << "Usage: " << program_name
-      << " [OPTIONS]\n\n"
-         "Options:\n"
-         "  --help               Show this help message and exit\n"
-         "  --gemini-api-key KEY Google Gemini API key\n"
-         "  --interactive        Show GIFT output and ask for approval before "
-         "saving\n"
-         "  --num-questions N    Number of questions to generate (default: 5)\n"
-         "  --output FILE        Write GIFT output to file instead of stdout\n"
-         "  --files FILES...     Files to process (can be used multiple "
-         "times)\n"
-         "  --prompt \"TEXT\"      Custom query prompt (default: \"From both "
-         "the text and \n"
-         "                       images in these files, generate N "
-         "multiple choice \n"
-         "                       questions formatted according to the provided "
-         "json \n"
-         "                       schema. Ensure that any code excerpts in the "
-         "generated \n"
-         "                       questions or answers are surrounded by a pair "
-         "of \n"
-         "                       backticks. Also ensure each question includes "
-         "a short \n"
-         "                       title: if a question is based on content from "
-         "a provided \n"
-         "                       file, start the question title using a short "
-         "version of \n"
-         "                       the file title.\")\n"
-         "  --quiet              Suppress non-error output (except interactive "
-         "prompts \n"
-         "                       and final GIFT output)\n\n"
-         "Examples:\n"
-         "  "
-      << program_name
-      << " --files file1.pdf file2.docx --num-questions 10\n"
-         "  "
-      << program_name
-      << " --interactive --files a.pdf --num-questions 5 --files b.txt c.md\n"
-         "  "
-      << program_name
-      << " --prompt \"Generate 7 C++ questions\" --num-questions 7\n"
-         "  "
-      << program_name
-      << " --quiet --gemini-api-key abc123 --output quiz.gift --files "
-         "../docs/*.pdf\n\n"
-         "Environment:\n"
-         "  GEMINI_API_KEY       API key for Google Gemini (if "
-         "--gemini-api-key not used)\n\n"
-         "Note: If --prompt is used, it should specify the "
-         "number of questions to be\n"
-         "      generated. Providing --num-questions too is an error.\n";
+      << "Usage: " << program_name << " [OPTIONS]"
+R"(
+
+Options:
+  --help               Show this help message and exit
+  --gemini-api-key KEY Google Gemini API key
+  --interactive        Show GIFT output and ask for approval before saving
+  --num-questions N    Number of questions to generate (default: 5)
+  --output FILE        Write GIFT output to file instead of stdout
+  --files FILES...     Files to process (can be used multiple times)
+  --prompt "TEXT"      Custom query prompt (default: "From both the text and
+                       images in these files, generate N multiple choice
+                       questions formatted according to the provided json
+                       schema. Ensure that any code excerpts in the generated
+                       questions or answers are surrounded by a pair of
+                       backticks. Also ensure each question includes a short
+                       title: if a question is based on content from a provided
+                       file, start the question title using a short version of
+                       the file title.")
+  --quiet              Suppress non-error output (except interactive prompts
+                       and final GIFT output)
+
+Examples:
+)"
+      "  " << program_name <<
+      " --files file1.pdf file2.docx --num-questions 10\n"
+      "  " << program_name <<
+      " --interactive --files a.pdf --num-questions 5 --files b.txt c.md\n"
+      "  " << program_name <<
+      " --prompt \"Generate 7 C++ questions\" --num-questions 7\n"
+      "  " << program_name <<
+  " --quiet --gemini-api-key abc123 --output quiz.gift --files ../docs/*.pdf"
+R"(
+
+Environment:
+  GEMINI_API_KEY       API key for Google Gemini (if --gemini-api-key not used)
+
+Note: If --prompt is used, it should specify the number of questions to be
+      generated. Providing --num-questions too is an error.
+)";
 }
 
 struct CommandLineArgs
