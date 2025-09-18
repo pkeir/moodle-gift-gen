@@ -1,0 +1,241 @@
+// $ ./moodle-gift-gen --files inputs/text-and-image-test*.pdf inputs/odd-file-name.md --num-questions 30
+
+::John's Preferences::
+[markdown]What is John's favourite colour? {
+~Blue
+=Green
+~Red
+~Yellow
+}
+
+::John's Number::
+[markdown]What is John's favourite number? {
+~12
+=89
+~5
+~7
+}
+
+::Construction Scene::
+[markdown]How many construction workers are visible in the image showing the cityscape? {
+~10
+=11
+~12
+~9
+}
+
+::Workers Setting::
+[markdown]Where are the workers depicted in the image high above a city? {
+~On a bridge
+=On a skyscraper beam
+~On the ground
+~Inside a building
+}
+
+::Workers Activity::
+[markdown]What activity are the workers primarily engaged in while on the beam? {
+~Working
+=Eating lunch
+~Reading blueprints
+~Taking a break
+}
+
+::Image Perspective::
+[markdown]The image of workers shows them high above which type of environment? {
+~A desert
+~A forest
+=A city
+~A farm
+}
+
+::Emma's Animal::
+[markdown]What is Emma's favourite animal? {
+~Lion
+=Penguin
+~Tiger
+~Bear
+}
+
+::Emma's Country::
+[markdown]What is Emma's favourite country? {
+~England
+~France
+=Scotland
+~Ireland
+}
+
+::Astronaut Activity::
+[markdown]What is the subject of the image showing a solitary figure on a barren landscape? {
+~A scientist in a lab
+=An astronaut on the moon
+~A diver underwater
+~A mountain climber
+}
+
+::Astronaut Environment::
+[markdown]Based on the image, what is the surface texture of the ground where the astronaut is standing? {
+~Smooth and glassy
+=Rocky and cratered
+~Grassy and green
+~Sandy and flat
+}
+
+::Astronaut Suit Detail::
+[markdown]What national symbol is visible on the astronaut's suit? {
+~Canadian flag
+~British flag
+=American flag
+~Chinese flag
+}
+
+::Space Exploration::
+[markdown]The setting of the astronaut image typically represents which major human achievement? {
+~First flight
+~Deep sea exploration
+=Moon landing
+~First space station
+}
+
+::Robin's Colour::
+[markdown]What is Robin's favourite colour? {
+~Green
+~Blue
+=Red
+~Yellow
+}
+
+::Robin's Number::
+[markdown]What is Robin's favourite number? {
+~89
+=12
+~5
+~7
+}
+
+::Favourite Colours::
+[markdown]Which of the following colours is NOT listed as a favourite for John or Robin? {
+~Green
+~Red
+=Blue
+~Both Green and Red
+}
+
+::Favourite Numbers::
+[markdown]Which of these numbers is mentioned as a favourite by any of the individuals? {
+~10
+=89
+~20
+~50
+}
+
+::Animal Preferences::
+[markdown]Which individual's favourite animal is a penguin? {
+~John
+=Emma
+~Robin
+~No one mentioned
+}
+
+::Country Preferences::
+[markdown]Scotland is the favourite country of which individual? {
+~John
+=Emma
+~Robin
+~Not mentioned
+}
+
+::Skyscraper Workers::
+[markdown]The image of construction workers is famously associated with the construction of which city's skyscrapers? {
+~London
+~Paris
+=New York City
+~Tokyo
+}
+
+::Lunar Surface Details::
+[markdown]What appears to be scattered across the lunar surface in the astronaut image? {
+~Trees
+~Water puddles
+=Rocks and debris
+~Smooth pavement
+}
+
+::Human Achievements::
+[markdown]Which two significant human achievements are depicted or implied by the images? {
+~Underwater exploration and space flight
+~Pyramid building and river navigation
+=High-rise construction and lunar landing
+~Bridge building and mountain climbing
+}
+
+::Fictional Character Preferences::
+[markdown]If there was a character named 'Alex' whose favourite colour was 'Purple' and favourite number was '7', which piece of information would be unique to Alex compared to John, Emma, and Robin? {
+~Favourite colour
+~Favourite number
+=Both favourite colour and number
+~Neither
+}
+
+::Textual Information Count::
+[markdown]How many distinct individuals are mentioned by name in the provided text snippets? {
+~Two
+=Three
+~Four
+~One
+}
+
+::Preferred Categories::
+[markdown]Which of these categories is NOT explicitly mentioned as a favourite preference for any of the individuals? {
+~Colour
+~Number
+~Animal
+=Food
+}
+
+::Image Content Grouping::
+[markdown]The image showing workers on a beam depicts a group of men. What distinguishes their attire from the subject of the image featuring an astronaut? {
+~They are wearing formal suits, the other is a uniform.
+=They are in work clothes, the other is a specialized space suit.
+~They are in military uniform, the other is civilian clothes.
+~They are in casual wear, the other is a formal uniform.
+}
+
+::Image Environment Contrast::
+[markdown]What is the primary difference in the environments depicted in the two images? {
+~One is urban, the other is rural.
+=One is terrestrial, the other is extraterrestrial.
+~One is aquatic, the other is aerial.
+~One is historical, the other is modern.
+}
+
+::John's Details::
+[markdown]Which statement correctly describes John's preferences? {
+~Favourite colour is red, favourite number is 12.
+~Favourite animal is a penguin, favourite country is Scotland.
+=Favourite colour is green, favourite number is 89.
+~Favourite colour is blue, favourite number is 89.
+}
+
+::Emma's Details::
+[markdown]Which statement correctly describes Emma's preferences? {
+=Favourite animal is a penguin, favourite country is Scotland.
+~Favourite colour is green, favourite number is 89.
+~Favourite colour is red, favourite number is 12.
+~Favourite animal is a lion, favourite country is England.
+}
+
+::Robin's Details::
+[markdown]Which statement correctly describes Robin's preferences? {
+~Favourite colour is green, favourite number is 89.
+~Favourite animal is a penguin, favourite country is Scotland.
+=Favourite colour is red, favourite number is 12.
+~Favourite colour is yellow, favourite number is 10.
+}
+
+::Visual Themes::
+[markdown]Both images share a common theme of individuals being in an unusual or elevated position. Which option best describes this? {
+~Underground exploration
+~Adventure sports
+=High altitude or extraterrestrial environments
+~Water-based activities
+}

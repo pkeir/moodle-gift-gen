@@ -1,0 +1,4 @@
+Carroll, Lewis. (2006). Alice’s Adventures in Wonderland. Urbana, Illinois: Project Gutenberg. Retrieved September 5th, 2025, from www.gutenberg.org/ebooks/19033
+
+Converted from epub via:
+  pandoc pg19033-images-3.epub -o alice-in-wonderland-text.pdf
