@@ -36,7 +36,8 @@ json generateQuizSchema(int num_questions)
            {{"type", "object"},
             {"properties",
              {{"title",
-               {{"type", "string"}, {"description", "A short title for the question"}}},
+               {{"type", "string"},
+                {"description", "A short title for the question"}}},
               {"question",
                {{"type", "string"}, {"description", "The question text"}}},
               {"options",
@@ -50,8 +51,8 @@ json generateQuizSchema(int num_questions)
                {{"type", "string"},
                 {"description",
                  "Optional explanation for the correct answer"}}}}},
-            {"required",
-             json::array({"title", "question", "options", "correct_answer"})}}}}}}},
+            {"required", json::array({"title", "question", "options",
+                                      "correct_answer"})}}}}}}},
       {"required", json::array({"questions"})}};
   return schema;
 }
@@ -124,7 +125,7 @@ std::string escapeGiftText(const std::string &text)
   result.reserve(text.length() * 1.2); // Reserve extra space for escaping
 
   bool in_code_segment = false;
-bool b = false;
+  bool b = false;
 
   for (size_t i = 0; i < text.length(); ++i)
   {
@@ -149,14 +150,14 @@ bool b = false;
     if (c == '{' || c == '}' || c == '#' || c == ':' || c == '~' || c == '=')
     {
       result += '\\';
-b=true;
+      b = true;
     }
 
     result += c;
   }
 
-if (b)
-std::cout << result << std::endl;
+  if (b)
+    std::cout << result << std::endl;
   return result;
 }
 
@@ -168,10 +169,13 @@ std::string convertToGiftFormat(const json &quiz_data)
   {
     if (question.contains("title"))
     {
-      gift_output << "::" << escapeGiftText(question["title"].get<std::string>()) << "::\n";
+      gift_output << "::"
+                  << escapeGiftText(question["title"].get<std::string>())
+                  << "::\n";
     }
     gift_output << "[markdown]";
-    gift_output << escapeGiftText(question["question"].get<std::string>()) << " {\n";
+    gift_output << escapeGiftText(question["question"].get<std::string>())
+                << " {\n";
 
     const auto &options = question["options"];
     int correct_index = question["correct_answer"].get<int>();
@@ -180,11 +184,13 @@ std::string convertToGiftFormat(const json &quiz_data)
     {
       if (i == correct_index)
       {
-        gift_output << "=" << escapeGiftText(options[i].get<std::string>()) << "\n";
+        gift_output << "=" << escapeGiftText(options[i].get<std::string>())
+                    << "\n";
       }
       else
       {
-        gift_output << "~" << escapeGiftText(options[i].get<std::string>()) << "\n";
+        gift_output << "~" << escapeGiftText(options[i].get<std::string>())
+                    << "\n";
       }
     }
 
@@ -246,8 +252,9 @@ std::vector<std::string> uploadFiles(const std::vector<std::string> &filenames,
 
     // Add metadata part
     json metadata = {
-        {"file", {{"display_name",
-                   filenames[i].substr(filenames[i].find_last_of("/\\") + 1)}}}};
+        {"file",
+         {{"display_name",
+           filenames[i].substr(filenames[i].find_last_of("/\\") + 1)}}}};
 
     curl_mimepart *part = curl_mime_addpart(handles[i].mime);
     curl_mime_name(part, "metadata");
@@ -264,8 +271,7 @@ std::vector<std::string> uploadFiles(const std::vector<std::string> &filenames,
     curl_easy_setopt(handles[i].curl, CURLOPT_URL, url.c_str());
     curl_easy_setopt(handles[i].curl, CURLOPT_MIMEPOST, handles[i].mime);
     curl_easy_setopt(handles[i].curl, CURLOPT_WRITEFUNCTION, WriteCallback);
-    curl_easy_setopt(handles[i].curl, CURLOPT_WRITEDATA,
-                     &handles[i].result);
+    curl_easy_setopt(handles[i].curl, CURLOPT_WRITEDATA, &handles[i].result);
 
     // Add to multi handle
     curl_multi_add_handle(multi_handle, handles[i].curl);
@@ -362,8 +368,9 @@ std::vector<std::string> uploadFiles(const std::vector<std::string> &filenames,
         }
         curl_multi_cleanup(multi_handle);
 
-        throw std::runtime_error("Failed to parse file ID from upload response for " +
-                                 handles[i].filename);
+        throw std::runtime_error(
+            "Failed to parse file ID from upload response for " +
+            handles[i].filename);
       }
     }
     else
@@ -401,8 +408,7 @@ void runQuizGeneration(const int num_questions,
                        const std::vector<std::string> &file_ids,
                        const std::string &api_key,
                        const std::string &output_file = "",
-                       const bool interactive = false,
-                       const bool quiet = false,
+                       const bool interactive = false, const bool quiet = false,
                        const std::string &custom_prompt = "")
 {
   json schema = generateQuizSchema(num_questions);
@@ -415,7 +421,7 @@ void runQuizGeneration(const int num_questions,
   else
   {
     query = "From both the text and images in these pdf files, generate " +
-              std::to_string(num_questions) +
+            std::to_string(num_questions) +
             " multiple choice questions formatted according to the provided"
             " json schema. Ensure that any code excerpts in the generated"
             " questions or answers are surrounded by a pair of backticks."
@@ -428,7 +434,7 @@ void runQuizGeneration(const int num_questions,
   while (!satisfied)
   {
     std::string response = queryGemini(file_ids, query, schema, api_key);
-    //std::cout << "Gemini response: " << response << std::endl;
+    // std::cout << "Gemini response: " << response << std::endl;
 
     json response_json = json::parse(response);
 
@@ -458,7 +464,8 @@ void runQuizGeneration(const int num_questions,
       std::string user_input;
       std::getline(std::cin, user_input);
 
-      if (user_input != "y" && user_input != "Y" && user_input != "yes" && user_input != "Yes")
+      if (user_input != "y" && user_input != "Y" && user_input != "yes" &&
+          user_input != "Yes")
       {
         throw std::runtime_error("User chose to exit after API error");
       }
@@ -516,7 +523,8 @@ void runQuizGeneration(const int num_questions,
         std::ofstream file(output_file);
         if (!file.is_open())
         {
-          throw std::runtime_error("Unable to open output file: " + output_file);
+          throw std::runtime_error("Unable to open output file: " +
+                                   output_file);
         }
         file << gift_output;
         file.close();
@@ -532,8 +540,7 @@ void runQuizGeneration(const int num_questions,
 }
 
 void cleanupFiles(const std::vector<std::string> &file_ids,
-                  const std::string &api_key,
-                  const bool quiet = false)
+                  const std::string &api_key, const bool quiet = false)
 {
   if (file_ids.empty())
     return;
@@ -564,8 +571,9 @@ void cleanupFiles(const std::vector<std::string> &file_ids,
       continue;
     }
 
-    std::string url = "https://generativelanguage.googleapis.com/v1beta/files/" +
-                      file_ids[i] + "?key=" + api_key;
+    std::string url =
+        "https://generativelanguage.googleapis.com/v1beta/files/" +
+        file_ids[i] + "?key=" + api_key;
 
     curl_easy_setopt(handles[i], CURLOPT_URL, url.c_str());
     curl_easy_setopt(handles[i], CURLOPT_CUSTOMREQUEST, "DELETE");
@@ -628,35 +636,54 @@ void cleanupFiles(const std::vector<std::string> &file_ids,
 
 void printUsage(const char *program_name)
 {
-  std::cout << "Usage: " << program_name << " [OPTIONS]\n\n"
-            << "Options:\n"
-            << "  --help               Show this help message and exit\n"
-            << "  --gemini-api-key KEY Google Gemini API key\n"
-            << "  --interactive        Show GIFT output and ask for approval before saving\n"
-            << "  --num-questions N    Number of questions to generate (default: 5)\n"
-            << "  --output FILE        Write GIFT output to file instead of stdout\n"
-            << "  --pdf-files FILES... PDF files to process (can be used multiple times)\n"
-            << "  --prompt \"TEXT\"      Custom query prompt (default: \"From both the text and \n"
-            << "                       images in these pdf files, generate N multiple choice \n"
-            << "                       questions formatted according to the provided json \n"
-            << "                       schema. Ensure that any code excerpts in the generated \n"
-            << "                       questions or answers are surrounded by a pair of \n"
-            << "                       backticks. Also ensure each question includes a short \n"
-            << "                       title: if a question is based on content from a provided \n"
-            << "                       PDF, start the question title using a short version of \n"
-            << "                       the PDF title.\")\n"
-            << "  --quiet              Suppress non-error output (except interactive prompts \n"
-            << "                       and final GIFT output)\n\n"
-            << "Examples:\n"
-            << "  " << program_name << " --pdf-files file1.pdf file2.pdf --num-questions 10\n"
-            << "  " << program_name << " --interactive --pdf-files a.pdf --num-questions 5 --pdf-files b.pdf c.pdf\n"
-            << "  " << program_name << " --prompt \"Generate 7 C++ questions\" --num-questions 7\n"
-            << "  " << program_name << " --quiet --gemini-api-key abc123 --output quiz.gift --pdf-files ../docs/*.pdf\n\n"
-            << "Environment:\n"
-            << "  GEMINI_API_KEY       API key for Google Gemini (if --gemini-api-key not used)\n\n"
-            << "Note: If --prompt and --num-questions specify different numbers, results may be unpredictable.\n";
+  std::cout
+      << "Usage: " << program_name << " [OPTIONS]\n\n"
+      << "Options:\n"
+      << "  --help               Show this help message and exit\n"
+      << "  --gemini-api-key KEY Google Gemini API key\n"
+      << "  --interactive        Show GIFT output and ask for approval before "
+         "saving\n"
+      << "  --num-questions N    Number of questions to generate (default: 5)\n"
+      << "  --output FILE        Write GIFT output to file instead of stdout\n"
+      << "  --pdf-files FILES... PDF files to process (can be used multiple "
+         "times)\n"
+      << "  --prompt \"TEXT\"      Custom query prompt (default: \"From both "
+         "the text and \n"
+      << "                       images in these pdf files, generate N "
+         "multiple choice \n"
+      << "                       questions formatted according to the provided "
+         "json \n"
+      << "                       schema. Ensure that any code excerpts in the "
+         "generated \n"
+      << "                       questions or answers are surrounded by a pair "
+         "of \n"
+      << "                       backticks. Also ensure each question includes "
+         "a short \n"
+      << "                       title: if a question is based on content from "
+         "a provided \n"
+      << "                       PDF, start the question title using a short "
+         "version of \n"
+      << "                       the PDF title.\")\n"
+      << "  --quiet              Suppress non-error output (except interactive "
+         "prompts \n"
+      << "                       and final GIFT output)\n\n"
+      << "Examples:\n"
+      << "  " << program_name
+      << " --pdf-files file1.pdf file2.pdf --num-questions 10\n"
+      << "  " << program_name
+      << " --interactive --pdf-files a.pdf --num-questions 5 --pdf-files b.pdf "
+         "c.pdf\n"
+      << "  " << program_name
+      << " --prompt \"Generate 7 C++ questions\" --num-questions 7\n"
+      << "  " << program_name
+      << " --quiet --gemini-api-key abc123 --output quiz.gift --pdf-files "
+         "../docs/*.pdf\n\n"
+      << "Environment:\n"
+      << "  GEMINI_API_KEY       API key for Google Gemini (if "
+         "--gemini-api-key not used)\n\n"
+      << "Note: If --prompt and --num-questions specify different numbers, "
+         "results may be unpredictable.\n";
 }
-
 
 struct CommandLineArgs
 {
@@ -698,7 +725,8 @@ CommandLineArgs parseCommandLine(int argc, char *argv[])
       }
       catch (const std::invalid_argument &)
       {
-        throw std::runtime_error("Invalid number for --num-questions: " + std::string(argv[i + 1]));
+        throw std::runtime_error("Invalid number for --num-questions: " +
+                                 std::string(argv[i + 1]));
       }
       ++i; // Skip the value
     }
@@ -754,7 +782,8 @@ CommandLineArgs parseCommandLine(int argc, char *argv[])
     }
     else
     {
-      throw std::runtime_error("Unexpected argument: " + arg + ". Use --pdf-files to specify PDF files.");
+      throw std::runtime_error("Unexpected argument: " + arg +
+                               ". Use --pdf-files to specify PDF files.");
     }
   }
 
@@ -777,7 +806,10 @@ int main(int argc, char *argv[])
 
     if (args.pdf_files.empty() && args.custom_prompt.empty())
     {
-      std::cerr << "Error: No PDF files specified and no custom prompt provided. Use --pdf-files to specify files or --prompt for custom queries.\n" << std::endl;
+      std::cerr
+          << "Error: No PDF files specified and no custom prompt provided. Use "
+             "--pdf-files to specify files or --prompt for custom queries.\n"
+          << std::endl;
       printUsage(argv[0]);
       return 1;
     }
@@ -792,7 +824,8 @@ int main(int argc, char *argv[])
       const char *api_key_env = std::getenv("GEMINI_API_KEY");
       if (!api_key_env)
       {
-        std::cerr << "Error: GEMINI_API_KEY environment variable not set and --gemini-api-key not provided"
+        std::cerr << "Error: GEMINI_API_KEY environment variable not set and "
+                     "--gemini-api-key not provided"
                   << std::endl;
         return 1;
       }
@@ -802,7 +835,8 @@ int main(int argc, char *argv[])
     if (!args.quiet)
     {
       if (args.pdf_files.empty())
-        std::cout << "Generating " << args.num_questions << " questions using custom prompt." << std::endl;
+        std::cout << "Generating " << args.num_questions
+                  << " questions using custom prompt." << std::endl;
       else
         std::cout << "Generating " << args.num_questions << " questions from "
                   << args.pdf_files.size() << " PDF files." << std::endl;
@@ -814,7 +848,8 @@ int main(int argc, char *argv[])
       file_ids = uploadFiles(args.pdf_files, api_key, args.quiet);
     }
 
-    runQuizGeneration(args.num_questions, file_ids, api_key, args.output_file, args.interactive, args.quiet, args.custom_prompt);
+    runQuizGeneration(args.num_questions, file_ids, api_key, args.output_file,
+                      args.interactive, args.quiet, args.custom_prompt);
 
     if (!file_ids.empty())
     {
