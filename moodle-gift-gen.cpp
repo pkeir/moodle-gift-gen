@@ -449,7 +449,7 @@ std::vector<std::string> upload_files(const std::vector<std::string> &filenames,
   return file_ids;
 }
 
-void runQuizGeneration(const int num_questions,
+void run_quiz_generation(const int num_questions,
                        const std::vector<std::string> &file_ids,
                        const std::string &api_key,
                        const std::string &output_file = "",
@@ -726,8 +726,9 @@ void print_usage(const char *program_name)
          "Environment:\n"
          "  GEMINI_API_KEY       API key for Google Gemini (if "
          "--gemini-api-key not used)\n\n"
-         "Note: If --prompt and --num-questions specify different numbers, "
-         "results may be unpredictable.\n";
+         "Note: If --prompt is used, it should specify the "
+         "number of questions to be\n"
+         "      generated. Providing --num-questions too is an error.\n";
 }
 
 struct CommandLineArgs
@@ -739,6 +740,7 @@ struct CommandLineArgs
   std::string custom_prompt;
   bool interactive = false;
   bool quiet = false;
+  bool num_questions_specified = false;
 };
 
 CommandLineArgs parse_command_line(int argc, char *argv[])
@@ -763,6 +765,7 @@ CommandLineArgs parse_command_line(int argc, char *argv[])
       try
       {
         args.num_questions = std::stoi(argv[i + 1]);
+        args.num_questions_specified = true;
         if (args.num_questions <= 0)
         {
           throw std::runtime_error("Number of questions must be positive");
@@ -859,6 +862,15 @@ int main(int argc, char *argv[])
       return 1;
     }
 
+    if (args.num_questions_specified && !args.custom_prompt.empty())
+    {
+      std::cerr
+          << "Error: Cannot specify both --num-questions and --prompt. "
+             "The custom prompt should specify the number of questions.\n"
+          << std::endl;
+      return 1;
+    }
+
     std::string api_key;
     if (!args.gemini_api_key.empty())
     {
@@ -880,8 +892,7 @@ int main(int argc, char *argv[])
     if (!args.quiet)
     {
       if (args.files.empty())
-        std::cout << "Generating " << args.num_questions
-                  << " questions using custom prompt." << std::endl;
+        std::cout << "Generating questions using a custom prompt." << std::endl;
       else
         std::cout << "Generating " << args.num_questions << " questions from "
                   << args.files.size() << " files." << std::endl;
@@ -893,12 +904,15 @@ int main(int argc, char *argv[])
       file_ids = upload_files(args.files, api_key, args.quiet);
     }
 
-    runQuizGeneration(args.num_questions, file_ids, api_key, args.output_file,
-                      args.interactive, args.quiet, args.custom_prompt);
-
-    if (!file_ids.empty())
+    try
+    {
+      run_quiz_generation(args.num_questions, file_ids, api_key, args.output_file,
+                        args.interactive, args.quiet, args.custom_prompt);
+    }
+    catch (...)
     {
       cleanup_files(file_ids, api_key, args.quiet);
+      throw; // Re-throw exception (e.g. 503 model overloaded) after cleanup
     }
   }
   catch (const std::exception &e)
