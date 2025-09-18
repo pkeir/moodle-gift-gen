@@ -18,15 +18,15 @@ struct WriteResult
   std::string data;
 };
 
-size_t WriteCallback(void *contents, size_t size, size_t nmemb,
-                     WriteResult *result)
+size_t write_callback(void *contents, size_t size, size_t nmemb,
+                      WriteResult *result)
 {
   size_t total_size = size * nmemb;
   result->data.append((char *)contents, total_size);
   return total_size;
 }
 
-json generateQuizSchema()
+json generate_quiz_schema()
 {
   json schema = {
       {"type", "object"},
@@ -58,10 +58,10 @@ json generateQuizSchema()
   return schema;
 }
 
-std::string queryGemini(const std::vector<std::string> &file_ids,
-                        const std::string &query, const json &schema,
-                        const std::string &api_key,
-                        const std::string &model = GEMINI_MODEL_FLASH)
+std::string query_gemini(const std::vector<std::string> &file_ids,
+                         const std::string &query, const json &schema,
+                         const std::string &api_key,
+                         const std::string &model = GEMINI_MODEL_FLASH)
 {
   CURL *curl;
   CURLcode res;
@@ -99,7 +99,7 @@ std::string queryGemini(const std::vector<std::string> &file_ids,
 
   curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
   curl_easy_setopt(curl, CURLOPT_POSTFIELDS, json_data.c_str());
-  curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
+  curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_callback);
   curl_easy_setopt(curl, CURLOPT_WRITEDATA, &result);
 
   struct curl_slist *headers = nullptr;
@@ -120,7 +120,7 @@ std::string queryGemini(const std::vector<std::string> &file_ids,
   return result.data;
 }
 
-std::string escapeGiftText(const std::string &text)
+std::string escape_gift_text(const std::string &text)
 {
   std::string result;
   result.reserve(text.length() * 1.2); // Reserve extra space for escaping
@@ -129,7 +129,7 @@ std::string escapeGiftText(const std::string &text)
 
   for (size_t i = 0; i < text.length(); ++i)
   {
-    char c = text[i];
+    const char c = text[i];
 
     // Check for backtick to toggle code segment state
     if (c == '`')
@@ -158,7 +158,7 @@ std::string escapeGiftText(const std::string &text)
   return result;
 }
 
-std::string getMimeType(const std::string &filename)
+std::string get_mime_type(const std::string &filename)
 {
   // Find the last dot to get the file extension
   size_t dot_pos = filename.find_last_of('.');
@@ -178,7 +178,7 @@ std::string getMimeType(const std::string &filename)
     return "application/pdf";
   else if (extension == "txt")
     return "text/plain";
-  else if (extension == "md")
+  else if (extension == "md" || extension == "markdown")
     return "text/markdown";
   else if (extension == "docx")
     return "application/"
@@ -222,7 +222,7 @@ std::string getMimeType(const std::string &filename)
     return "application/octet-stream"; // Default for unknown types
 }
 
-std::string convertToGiftFormat(const json &quiz_data)
+std::string convert_to_gift_format(const json &quiz_data)
 {
   std::stringstream gift_output;
 
@@ -231,11 +231,11 @@ std::string convertToGiftFormat(const json &quiz_data)
     if (question.contains("title"))
     {
       gift_output << "::"
-                  << escapeGiftText(question["title"].get<std::string>())
+                  << escape_gift_text(question["title"].get<std::string>())
                   << "::\n";
     }
     gift_output << "[markdown]"
-                << escapeGiftText(question["question"].get<std::string>())
+                << escape_gift_text(question["question"].get<std::string>())
                 << " {\n";
 
     const auto &options = question["options"];
@@ -243,8 +243,9 @@ std::string convertToGiftFormat(const json &quiz_data)
 
     for (size_t i = 0; i < options.size(); ++i)
     {
-      const char t = (i == correct_index) ? '=' : '~';
-      gift_output << t << escapeGiftText(options[i].get<std::string>()) << '\n';
+      const char c = (i == correct_index) ? '=' : '~';
+      gift_output << c << escape_gift_text(options[i].get<std::string>())
+                  << '\n';
     }
 
     gift_output << "}\n\n";
@@ -264,9 +265,9 @@ struct UploadHandle
   long response_code;
 };
 
-std::vector<std::string> uploadFiles(const std::vector<std::string> &filenames,
-                                     const std::string &api_key,
-                                     const bool quiet = false)
+std::vector<std::string> upload_files(const std::vector<std::string> &filenames,
+                                      const std::string &api_key,
+                                      const bool quiet = false)
 {
   if (filenames.empty())
     return {};
@@ -318,12 +319,12 @@ std::vector<std::string> uploadFiles(const std::vector<std::string> &filenames,
     part = curl_mime_addpart(handles[i].mime);
     curl_mime_name(part, "file");
     curl_mime_filedata(part, filenames[i].c_str());
-    curl_mime_type(part, getMimeType(filenames[i]).c_str());
+    curl_mime_type(part, get_mime_type(filenames[i]).c_str());
 
     // Configure curl options
     curl_easy_setopt(handles[i].curl, CURLOPT_URL, url.c_str());
     curl_easy_setopt(handles[i].curl, CURLOPT_MIMEPOST, handles[i].mime);
-    curl_easy_setopt(handles[i].curl, CURLOPT_WRITEFUNCTION, WriteCallback);
+    curl_easy_setopt(handles[i].curl, CURLOPT_WRITEFUNCTION, write_callback);
     curl_easy_setopt(handles[i].curl, CURLOPT_WRITEDATA, &handles[i].result);
 
     // Add to multi handle
@@ -464,7 +465,7 @@ void runQuizGeneration(const int num_questions,
                        const bool interactive = false, const bool quiet = false,
                        const std::string &custom_prompt = "")
 {
-  json schema = generateQuizSchema();
+  json schema = generate_quiz_schema();
   std::string query;
 
   if (!custom_prompt.empty())
@@ -486,7 +487,7 @@ void runQuizGeneration(const int num_questions,
   bool satisfied = false;
   while (!satisfied)
   {
-    std::string response = queryGemini(file_ids, query, schema, api_key);
+    std::string response = query_gemini(file_ids, query, schema, api_key);
     // std::cout << "Gemini response: " << response << std::endl;
 
     json response_json = json::parse(response);
@@ -551,7 +552,7 @@ void runQuizGeneration(const int num_questions,
       quiz_data = response_json;
     }
 
-    std::string gift_output = convertToGiftFormat(quiz_data);
+    std::string gift_output = convert_to_gift_format(quiz_data);
 
     if (interactive)
     {
@@ -630,7 +631,7 @@ void cleanupFiles(const std::vector<std::string> &file_ids,
 
     curl_easy_setopt(handles[i], CURLOPT_URL, url.c_str());
     curl_easy_setopt(handles[i], CURLOPT_CUSTOMREQUEST, "DELETE");
-    curl_easy_setopt(handles[i], CURLOPT_WRITEFUNCTION, WriteCallback);
+    curl_easy_setopt(handles[i], CURLOPT_WRITEFUNCTION, write_callback);
     curl_easy_setopt(handles[i], CURLOPT_WRITEDATA, &results[i]);
 
     curl_multi_add_handle(multi_handle, handles[i]);
@@ -687,7 +688,7 @@ void cleanupFiles(const std::vector<std::string> &file_ids,
               << std::endl;
 }
 
-void printUsage(const char *program_name)
+void print_usage(const char *program_name)
 {
   std::cout
       << "Usage: " << program_name
@@ -763,7 +764,7 @@ CommandLineArgs parseCommandLine(int argc, char *argv[])
 
     if (arg == "--help")
     {
-      printUsage(argv[0]);
+      print_usage(argv[0]);
       exit(0);
     }
     else if (arg == "--num-questions")
@@ -851,7 +852,7 @@ int main(int argc, char *argv[])
 {
   if (argc < 2)
   {
-    printUsage(argv[0]);
+    print_usage(argv[0]);
     return 1;
   }
 
@@ -867,7 +868,7 @@ int main(int argc, char *argv[])
           << "Error: No files specified and no custom prompt provided. Use "
              "--files to specify files or --prompt for custom queries.\n"
           << std::endl;
-      printUsage(argv[0]);
+      print_usage(argv[0]);
       return 1;
     }
 
@@ -902,7 +903,7 @@ int main(int argc, char *argv[])
     std::vector<std::string> file_ids;
     if (!args.files.empty())
     {
-      file_ids = uploadFiles(args.files, api_key, args.quiet);
+      file_ids = upload_files(args.files, api_key, args.quiet);
     }
 
     runQuizGeneration(args.num_questions, file_ids, api_key, args.output_file,
