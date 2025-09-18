@@ -450,11 +450,12 @@ std::vector<std::string> upload_files(const std::vector<std::string> &filenames,
 }
 
 void run_quiz_generation(const int num_questions,
-                       const std::vector<std::string> &file_ids,
-                       const std::string &api_key,
-                       const std::string &output_file = "",
-                       const bool interactive = false, const bool quiet = false,
-                       const std::string &custom_prompt = "")
+                         const std::vector<std::string> &file_ids,
+                         const std::string &api_key,
+                         const std::string &output_file = "",
+                         const bool interactive = false,
+                         const bool quiet = false,
+                         const std::string &custom_prompt = "")
 {
   json schema = generate_quiz_schema();
   std::string query;
@@ -585,7 +586,7 @@ void run_quiz_generation(const int num_questions,
 }
 
 void cleanup_files(const std::vector<std::string> &file_ids,
-                  const std::string &api_key, const bool quiet = false)
+                   const std::string &api_key, const bool quiet = false)
 {
   if (file_ids.empty())
     return;
@@ -678,8 +679,9 @@ void cleanup_files(const std::vector<std::string> &file_ids,
 void print_usage(const char *program_name)
 {
   std::cout
-      << "Usage: " << program_name << " [OPTIONS]"
-R"(
+      << "Usage: " << program_name
+      << " [OPTIONS]"
+         R"(
 
 Options:
   --help               Show this help message and exit
@@ -702,15 +704,20 @@ Options:
 
 Examples:
 )"
-      "  " << program_name <<
-      " --files file1.pdf file2.docx --num-questions 10\n"
-      "  " << program_name <<
-      " --interactive --files a.pdf --num-questions 5 --files b.txt c.md\n"
-      "  " << program_name <<
-      " --prompt \"Generate 7 C++ questions\" --num-questions 7\n"
-      "  " << program_name <<
-  " --quiet --gemini-api-key abc123 --output quiz.gift --files ../docs/*.pdf"
-R"(
+         "  "
+      << program_name
+      << " --files file1.pdf file2.docx --num-questions 10\n"
+         "  "
+      << program_name
+      << " --interactive --files a.pdf --num-questions 5 --files b.txt c.md\n"
+         "  "
+      << program_name
+      << " --prompt \"Generate 7 C++ questions\" --num-questions 7\n"
+         "  "
+      << program_name
+      << " --quiet --gemini-api-key abc123 --output quiz.gift --files "
+         "../docs/*.pdf"
+         R"(
 
 Environment:
   GEMINI_API_KEY       API key for Google Gemini (if --gemini-api-key not used)
@@ -853,10 +860,9 @@ int main(int argc, char *argv[])
 
     if (args.num_questions_specified && !args.custom_prompt.empty())
     {
-      std::cerr
-          << "Error: Cannot specify both --num-questions and --prompt. "
-             "The custom prompt should specify the number of questions.\n"
-          << std::endl;
+      std::cerr << "Error: Cannot specify both --num-questions and --prompt. "
+                   "The custom prompt should specify the number of questions.\n"
+                << std::endl;
       return 1;
     }
 
@@ -895,8 +901,9 @@ int main(int argc, char *argv[])
 
     try
     {
-      run_quiz_generation(args.num_questions, file_ids, api_key, args.output_file,
-                        args.interactive, args.quiet, args.custom_prompt);
+      run_quiz_generation(args.num_questions, file_ids, api_key,
+                          args.output_file, args.interactive, args.quiet,
+                          args.custom_prompt);
     }
     catch (...)
     {
