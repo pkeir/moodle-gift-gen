@@ -1,7 +1,8 @@
-# Moodle Gift Generator
+# Moodle Quiz GIFT Generator
 
-Generate Moodle GIFT Multiple Choice Questions (MCQs) using a Large Language
-Model (LLM).
+This command-line tool can quickly generate Moodle Quiz GIFT multiple choice questions (MCQs) using a Large
+Language Model (LLM). The Google Gemini 2.5 Flash LLM is configured as
+the default provider, but Gemini 2.5 Pro can easily be used instead.
 
 ## Building
 
@@ -48,6 +49,29 @@ Brew can be used to install dependencies on Mac OS.
 brew install curl nlohmann-json
 cmake ..
 ```
+
+## Example Usage
+
+Before you run the Moodle Quiz GIFT Generator, you need a Gemini API key.
+Assuming you have a Google account, this can be obtained very quickly as
+described [here](https://ai.google.dev/gemini-api/docs/api-key). The
+Moodle Quiz GIFT Generator can find your key if it is either defined
+in an environment variable named `GEMINI_API_KEY`; or provided
+as a command-line option.
+
+The executable `moodle-gift-gen` is standalone, and may be moved from
+the default CMake `build` directory; say to the project root (alongside
+this README.md). Here are some example invocations:
+
+```
+moodle-gift-gen --files inputs/text-and-image-test*.pdf inputs/odd-file-name.md --num-questions 30 --output outputs/30.gift
+```
+
+
+## Contributing
+
+Contributions are welcome. Please create or comment on an issue; or submit a
+pull request.
 
 ## License
 
