@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <curl/curl.h>
 #include <fstream>
 #include <iostream>
@@ -157,6 +158,70 @@ std::string escapeGiftText(const std::string &text)
   return result;
 }
 
+std::string getMimeType(const std::string &filename)
+{
+  // Find the last dot to get the file extension
+  size_t dot_pos = filename.find_last_of('.');
+  if (dot_pos == std::string::npos)
+  {
+    return "application/octet-stream"; // Default for unknown types
+  }
+
+  std::string extension = filename.substr(dot_pos + 1);
+
+  // Convert extension to lowercase for case-insensitive comparison
+  std::transform(extension.begin(), extension.end(), extension.begin(),
+                 [](unsigned char c) { return std::tolower(c); });
+
+  // Map common file extensions to MIME types
+  if (extension == "pdf")
+    return "application/pdf";
+  else if (extension == "txt")
+    return "text/plain";
+  else if (extension == "md")
+    return "text/markdown";
+  else if (extension == "docx")
+    return "application/"
+           "vnd.openxmlformats-officedocument.wordprocessingml.document";
+  else if (extension == "doc")
+    return "application/msword";
+  else if (extension == "pptx")
+    return "application/"
+           "vnd.openxmlformats-officedocument.presentationml.presentation";
+  else if (extension == "ppt")
+    return "application/vnd.ms-powerpoint";
+  else if (extension == "xlsx")
+    return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+  else if (extension == "xls")
+    return "application/vnd.ms-excel";
+  else if (extension == "jpg" || extension == "jpeg")
+    return "image/jpeg";
+  else if (extension == "png")
+    return "image/png";
+  else if (extension == "gif")
+    return "image/gif";
+  else if (extension == "bmp")
+    return "image/bmp";
+  else if (extension == "webp")
+    return "image/webp";
+  else if (extension == "tiff" || extension == "tif")
+    return "image/tiff";
+  else if (extension == "svg")
+    return "image/svg+xml";
+  else if (extension == "html" || extension == "htm")
+    return "text/html";
+  else if (extension == "json")
+    return "application/json";
+  else if (extension == "xml")
+    return "application/xml";
+  else if (extension == "csv")
+    return "text/csv";
+  else if (extension == "rtf")
+    return "application/rtf";
+  else
+    return "application/octet-stream"; // Default for unknown types
+}
+
 std::string convertToGiftFormat(const json &quiz_data)
 {
   std::stringstream gift_output;
@@ -253,7 +318,7 @@ std::vector<std::string> uploadFiles(const std::vector<std::string> &filenames,
     part = curl_mime_addpart(handles[i].mime);
     curl_mime_name(part, "file");
     curl_mime_filedata(part, filenames[i].c_str());
-    curl_mime_type(part, "application/pdf");
+    curl_mime_type(part, getMimeType(filenames[i]).c_str());
 
     // Configure curl options
     curl_easy_setopt(handles[i].curl, CURLOPT_URL, url.c_str());
@@ -408,14 +473,14 @@ void runQuizGeneration(const int num_questions,
   }
   else
   {
-    query = "From both the text and images in these pdf files, generate " +
+    query = "From both the text and images in these files, generate " +
             std::to_string(num_questions) +
             " multiple choice questions formatted according to the provided"
             " json schema. Ensure that any code excerpts in the generated"
             " questions or answers are surrounded by a pair of backticks."
             " Also ensure each question includes a short title: if a question"
-            " is based on content from a provided PDF, start the question"
-            " title using a short version of the PDF title.";
+            " is based on content from a provided file, start the question"
+            " title using a short version of the file title.";
   }
 
   bool satisfied = false;
@@ -633,11 +698,11 @@ void printUsage(const char *program_name)
          "saving\n"
       << "  --num-questions N    Number of questions to generate (default: 5)\n"
       << "  --output FILE        Write GIFT output to file instead of stdout\n"
-      << "  --pdf-files FILES... PDF files to process (can be used multiple "
+      << "  --files FILES...     Files to process (can be used multiple "
          "times)\n"
       << "  --prompt \"TEXT\"      Custom query prompt (default: \"From both "
          "the text and \n"
-      << "                       images in these pdf files, generate N "
+      << "                       images in these files, generate N "
          "multiple choice \n"
       << "                       questions formatted according to the provided "
          "json \n"
@@ -649,23 +714,23 @@ void printUsage(const char *program_name)
          "a short \n"
       << "                       title: if a question is based on content from "
          "a provided \n"
-      << "                       PDF, start the question title using a short "
+      << "                       file, start the question title using a short "
          "version of \n"
-      << "                       the PDF title.\")\n"
+      << "                       the file title.\")\n"
       << "  --quiet              Suppress non-error output (except interactive "
          "prompts \n"
       << "                       and final GIFT output)\n\n"
       << "Examples:\n"
       << "  " << program_name
-      << " --pdf-files file1.pdf file2.pdf --num-questions 10\n"
+      << " --files file1.pdf file2.docx --num-questions 10\n"
       << "  " << program_name
-      << " --interactive --pdf-files a.pdf --num-questions 5 --pdf-files b.pdf "
-         "c.pdf\n"
+      << " --interactive --files a.pdf --num-questions 5 --files b.txt "
+         "c.md\n"
       << "  " << program_name
       << " --prompt \"Generate 7 C++ questions\" --num-questions 7\n"
       << "  " << program_name
-      << " --quiet --gemini-api-key abc123 --output quiz.gift --pdf-files "
-         "../docs/*.pdf\n\n"
+      << " --quiet --gemini-api-key abc123 --output quiz.gift --files "
+         "../docs/*\n\n"
       << "Environment:\n"
       << "  GEMINI_API_KEY       API key for Google Gemini (if "
          "--gemini-api-key not used)\n\n"
@@ -676,7 +741,7 @@ void printUsage(const char *program_name)
 struct CommandLineArgs
 {
   int num_questions = 5;
-  std::vector<std::string> pdf_files;
+  std::vector<std::string> files;
   std::string gemini_api_key;
   std::string output_file;
   std::string custom_prompt;
@@ -753,13 +818,13 @@ CommandLineArgs parseCommandLine(int argc, char *argv[])
       args.custom_prompt = argv[i + 1];
       ++i; // Skip the value
     }
-    else if (arg == "--pdf-files")
+    else if (arg == "--files")
     {
       // Collect all following arguments until next option or end
       ++i;
       while (i < argc && argv[i][0] != '-')
       {
-        args.pdf_files.push_back(argv[i]);
+        args.files.push_back(argv[i]);
         ++i;
       }
       --i; // Back up one since the loop will increment
@@ -771,7 +836,7 @@ CommandLineArgs parseCommandLine(int argc, char *argv[])
     else
     {
       throw std::runtime_error("Unexpected argument: " + arg +
-                               ". Use --pdf-files to specify PDF files.");
+                               ". Use --files to specify files.");
     }
   }
 
@@ -792,11 +857,11 @@ int main(int argc, char *argv[])
   {
     CommandLineArgs args = parseCommandLine(argc, argv);
 
-    if (args.pdf_files.empty() && args.custom_prompt.empty())
+    if (args.files.empty() && args.custom_prompt.empty())
     {
       std::cerr
-          << "Error: No PDF files specified and no custom prompt provided. Use "
-             "--pdf-files to specify files or --prompt for custom queries.\n"
+          << "Error: No files specified and no custom prompt provided. Use "
+             "--files to specify files or --prompt for custom queries.\n"
           << std::endl;
       printUsage(argv[0]);
       return 1;
@@ -822,18 +887,18 @@ int main(int argc, char *argv[])
 
     if (!args.quiet)
     {
-      if (args.pdf_files.empty())
+      if (args.files.empty())
         std::cout << "Generating " << args.num_questions
                   << " questions using custom prompt." << std::endl;
       else
         std::cout << "Generating " << args.num_questions << " questions from "
-                  << args.pdf_files.size() << " PDF files." << std::endl;
+                  << args.files.size() << " files." << std::endl;
     }
 
     std::vector<std::string> file_ids;
-    if (!args.pdf_files.empty())
+    if (!args.files.empty())
     {
-      file_ids = uploadFiles(args.pdf_files, api_key, args.quiet);
+      file_ids = uploadFiles(args.files, api_key, args.quiet);
     }
 
     runQuizGeneration(args.num_questions, file_ids, api_key, args.output_file,
