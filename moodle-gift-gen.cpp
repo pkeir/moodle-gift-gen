@@ -338,13 +338,9 @@ std::vector<std::string> upload_files(const std::vector<std::string> &filenames,
   // Wait for all transfers to complete
   while (running_handles > 0)
   {
-    fd_set fdread, fdwrite, fdexcep;
+    fd_set fdread{}, fdwrite{}, fdexcep{};
     int maxfd = -1;
     long curl_timeo = -1;
-
-    FD_ZERO(&fdread);
-    FD_ZERO(&fdwrite);
-    FD_ZERO(&fdexcep);
 
     curl_multi_timeout(multi_handle, &curl_timeo);
     if (curl_timeo < 0)
@@ -639,13 +635,9 @@ void cleanup_files(const std::vector<std::string> &file_ids,
   // Wait for all transfers to complete
   while (running_handles > 0)
   {
-    fd_set fdread, fdwrite, fdexcep;
+    fd_set fdread{}, fdwrite{}, fdexcep{};
     int maxfd = -1;
     long curl_timeo = -1;
-
-    FD_ZERO(&fdread);
-    FD_ZERO(&fdwrite);
-    FD_ZERO(&fdexcep);
 
     curl_multi_timeout(multi_handle, &curl_timeo);
     if (curl_timeo < 0)
