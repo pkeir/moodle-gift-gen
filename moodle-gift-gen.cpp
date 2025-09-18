@@ -13,16 +13,11 @@ using json = nlohmann::json;
 const std::string GEMINI_MODEL_FLASH = "gemini-2.5-flash";
 const std::string GEMINI_MODEL_PRO = "gemini-2.5-pro";
 
-struct WriteResult
-{
-  std::string data;
-};
-
 size_t write_callback(void *contents, size_t size, size_t nmemb,
-                      WriteResult *result)
+                      std::string *result)
 {
   size_t total_size = size * nmemb;
-  result->data.append((char *)contents, total_size);
+  result->append((char *)contents, total_size);
   return total_size;
 }
 
@@ -65,7 +60,7 @@ std::string query_gemini(const std::vector<std::string> &file_ids,
 {
   CURL *curl;
   CURLcode res;
-  WriteResult result;
+  std::string result;
 
   curl = curl_easy_init();
   if (!curl)
@@ -117,7 +112,7 @@ std::string query_gemini(const std::vector<std::string> &file_ids,
                              std::string(curl_easy_strerror(res)));
   }
 
-  return result.data;
+  return result;
 }
 
 std::string escape_gift_text(const std::string &text)
@@ -258,7 +253,7 @@ struct UploadHandle
 {
   CURL *curl;
   curl_mime *mime;
-  WriteResult result;
+  std::string result;
   std::string filename;
   std::string file_id;
   bool completed;
@@ -403,9 +398,9 @@ std::vector<std::string> upload_files(const std::vector<std::string> &filenames,
     }
 
     // Parse response to get file ID
-    if (!handles[i].result.data.empty())
+    if (!handles[i].result.empty())
     {
-      json response = json::parse(handles[i].result.data);
+      json response = json::parse(handles[i].result);
       if (response.contains("file") && response["file"].contains("name"))
       {
         std::string file_name = response["file"]["name"];
@@ -593,7 +588,7 @@ void runQuizGeneration(const int num_questions,
   }
 }
 
-void cleanupFiles(const std::vector<std::string> &file_ids,
+void cleanup_files(const std::vector<std::string> &file_ids,
                   const std::string &api_key, const bool quiet = false)
 {
   if (file_ids.empty())
@@ -612,7 +607,7 @@ void cleanupFiles(const std::vector<std::string> &file_ids,
   }
 
   std::vector<CURL *> handles(file_ids.size());
-  std::vector<WriteResult> results(file_ids.size());
+  std::vector<std::string> results(file_ids.size());
 
   // Setup all deletion handles
   for (size_t i = 0; i < file_ids.size(); ++i)
@@ -754,7 +749,7 @@ struct CommandLineArgs
   bool quiet = false;
 };
 
-CommandLineArgs parseCommandLine(int argc, char *argv[])
+CommandLineArgs parse_command_line(int argc, char *argv[])
 {
   CommandLineArgs args;
 
@@ -860,7 +855,7 @@ int main(int argc, char *argv[])
 
   try
   {
-    CommandLineArgs args = parseCommandLine(argc, argv);
+    CommandLineArgs args = parse_command_line(argc, argv);
 
     if (args.files.empty() && args.custom_prompt.empty())
     {
@@ -911,7 +906,7 @@ int main(int argc, char *argv[])
 
     if (!file_ids.empty())
     {
-      cleanupFiles(file_ids, api_key, args.quiet);
+      cleanup_files(file_ids, api_key, args.quiet);
     }
   }
   catch (const std::exception &e)
