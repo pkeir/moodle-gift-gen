@@ -1,0 +1,42 @@
+// $ moodle-gift-gen --prompt "Generate 5 questions on the topic of modern farming."
+
+Generating questions using a custom prompt.
+::Precision Ag Benefits::
+[markdown]What is a primary benefit of using precision agriculture techniques, such as GPS-guided tractors and variable rate technology? {
+~Increased manual labor requirements
+~Reduced need for data analysis
+=Optimized resource application (e.g., water, fertilizer)
+~Decreased crop yields
+}
+
+::Hydroponic Systems::
+[markdown]Which of the following best describes hydroponics? {
+~Growing plants in soil enriched with organic compost
+~A method of pest control using natural predators
+=Cultivating plants without soil, often using mineral nutrient solutions in water
+~Genetic modification of crop seeds to resist diseases
+}
+
+::Vertical Farming Advantages::
+[markdown]A significant advantage of vertical farming is its ability to\: {
+~Grow a wider variety of traditional field crops
+~Reduce the need for artificial lighting
+=Produce crops in urban areas with limited land
+~Eliminate all energy consumption
+}
+
+::GMO Purpose::
+[markdown]What is a common goal of genetically modifying crops in modern agriculture? {
+~To make crops entirely immune to all environmental stressors
+~To increase susceptibility to common pests
+=To enhance traits like disease resistance, herbicide tolerance, or nutritional value
+~To drastically reduce the growing season to only a few days
+}
+
+::Robotic Farming Task::
+[markdown]In modern farming, what task might an agricultural robot be used for? {
+~Negotiating land sales
+~Performing complex financial accounting
+=Automated harvesting, weeding, or crop monitoring
+~Developing new fertilizer formulas
+}

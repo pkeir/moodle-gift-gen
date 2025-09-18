@@ -1,4 +1,4 @@
-// $ ./moodle-gift-gen --files inputs/text-and-image-test*.pdf inputs/odd-file-name.md --num-questions 30
+// $ moodle-gift-gen --files inputs/text-and-image-test*.pdf inputs/odd-file-name.md --num-questions 30
 
 ::John's Preferences::
 [markdown]What is John's favourite colour? {

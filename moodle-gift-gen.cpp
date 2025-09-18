@@ -459,16 +459,8 @@ void run_quiz_generation(const int num_questions,
 {
   json schema = generate_quiz_schema();
   std::string query;
-
-  if (!custom_prompt.empty())
-  {
-    query = custom_prompt;
-  }
-  else
-  {
-    query = "From both the text and images in the provided files, generate " +
-            std::to_string(num_questions) +
-            " multiple choice questions formatted according to the provided"
+  const std::string constraints =
+            " Ensure these are formatted according to the provided"
             " json schema. Ensure that any code excerpts in the generated"
             " questions or answers are surrounded by a pair of backticks."
             " Also ensure each question includes a short title: if a question"
@@ -479,6 +471,16 @@ void run_quiz_generation(const int num_questions,
             " image, do this only using one or two words which relate to the"
             " content of the image itself; though vary (avoid) this if it"
             " might help answer the question.";
+
+  if (!custom_prompt.empty())
+  {
+    query = custom_prompt + constraints;
+  }
+  else
+  {
+    query = "From both the text and images in the provided files, generate " +
+            std::to_string(num_questions) +
+            " multiple choice questions." + constraints;
   }
 
   bool satisfied = false;
