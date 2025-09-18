@@ -125,7 +125,6 @@ std::string escapeGiftText(const std::string &text)
   result.reserve(text.length() * 1.2); // Reserve extra space for escaping
 
   bool in_code_segment = false;
-  bool b = false;
 
   for (size_t i = 0; i < text.length(); ++i)
   {
@@ -150,14 +149,11 @@ std::string escapeGiftText(const std::string &text)
     if (c == '{' || c == '}' || c == '#' || c == ':' || c == '~' || c == '=')
     {
       result += '\\';
-      b = true;
     }
 
     result += c;
   }
 
-  if (b)
-    std::cout << result << std::endl;
   return result;
 }
 
@@ -182,16 +178,8 @@ std::string convertToGiftFormat(const json &quiz_data)
 
     for (size_t i = 0; i < options.size(); ++i)
     {
-      if (i == correct_index)
-      {
-        gift_output << "=" << escapeGiftText(options[i].get<std::string>())
-                    << "\n";
-      }
-      else
-      {
-        gift_output << "~" << escapeGiftText(options[i].get<std::string>())
-                    << "\n";
-      }
+      const char t = (i == correct_index) ? '=' : '~';
+      gift_output << t << escapeGiftText(options[i].get<std::string>()) << '\n';
     }
 
     gift_output << "}\n\n";
