@@ -466,14 +466,19 @@ void run_quiz_generation(const int num_questions,
   }
   else
   {
-    query = "From both the text and images in these files, generate " +
+    query = "From both the text and images in the provided files, generate " +
             std::to_string(num_questions) +
             " multiple choice questions formatted according to the provided"
             " json schema. Ensure that any code excerpts in the generated"
             " questions or answers are surrounded by a pair of backticks."
             " Also ensure each question includes a short title: if a question"
             " is based on content from a provided file, start the question"
-            " title using a short version of the file title.";
+            " title using a short version of the relevant file's title or"
+            " overall theme. Do not refer to the files provided by an ordinal"
+            " word, such as \"first\" or \"second\". When referring to an"
+            " image, do this only using one or two words which relate to the"
+            " content of the image itself; though vary (avoid) this if it"
+            " might help answer the question.";
   }
 
   bool satisfied = false;
@@ -691,14 +696,20 @@ Options:
   --output FILE        Write GIFT output to file instead of stdout
   --files FILES...     Files to process (can be used multiple times)
   --prompt "TEXT"      Custom query prompt (default: "From both the text and
-                       images in these files, generate N multiple choice
+                       images in the provided files, generate N multiple choice
                        questions formatted according to the provided json
                        schema. Ensure that any code excerpts in the generated
                        questions or answers are surrounded by a pair of
                        backticks. Also ensure each question includes a short
                        title: if a question is based on content from a provided
                        file, start the question title using a short version of
-                       the file title.")
+                       the relevant file's title or overall theme. Do not refer
+                       to the files provided by an ordinal word, such as
+                       "first" or "second". When referring to an image, do this
+                       only using one or two words which relate to the content
+                       of the image itself; though vary (avoid) this if it
+                       might help answer the question.")
+
   --quiet              Suppress non-error output (except interactive prompts
                        and final GIFT output)
 
