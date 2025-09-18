@@ -169,8 +169,8 @@ std::string convertToGiftFormat(const json &quiz_data)
                   << escapeGiftText(question["title"].get<std::string>())
                   << "::\n";
     }
-    gift_output << "[markdown]";
-    gift_output << escapeGiftText(question["question"].get<std::string>())
+    gift_output << "[markdown]"
+                << escapeGiftText(question["question"].get<std::string>())
                 << " {\n";
 
     const auto &options = question["options"];
