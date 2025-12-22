@@ -16,7 +16,8 @@ HTTPS; and the Nlohmann JSON library for parsing and generation of JSO packets.
 * [Nlohmann JSON](https://github.com/nlohmann/json)
 
 Your favourite package manager can install these two dependencies.
-Use CMake to configure; then build the `moodle-gift-gen` executable.
+Use CMake to configure; then build the `moodle-gift-gen` executable
+(`moodle-gift-gen.exe` on Windows).
 
 **Ubuntu (Debian)**
 
@@ -55,12 +56,14 @@ cmake ..
 
 ## Example Usage
 
-Before you run the Moodle Quiz GIFT Generator, you need a Gemini API key.
-Assuming you have a Google account, this can be obtained very quickly as
-described [here](https://ai.google.dev/gemini-api/docs/api-key). The
-Moodle Quiz GIFT Generator can find your key if it is either defined
-in an environment variable named `GEMINI_API_KEY`; or provided
-as a command-line option to `moodle-gift-gen`.
+Before you run the Moodle Quiz GIFT Generator, you need API access to Gemini.
+Assuming you have a Google account, a project and its API key can easily be
+created using [Google AI Studio](https://aistudio.google.com). API keys are
+further described [here](https://ai.google.dev/gemini-api/docs/api-key).
+
+The Moodle Quiz GIFT Generator can find your key if it is either defined in an
+environment variable named `GEMINI_API_KEY`; or provided as a command-line
+option to `moodle-gift-gen`.
 
 The executable `moodle-gift-gen` is standalone, and may be moved from
 the default CMake `build` directory; say to the project root (alongside
@@ -77,7 +80,8 @@ by hand into the `5.gift` file in the `output` directory.
 moodle-gift-gen --prompt "Generate 5 questions on the topic of modern farming."
 ```
 
-The usage information shown below is output if no arguments are provided to ``moodle-gift-gen`:
+The usage information shown below is output if no arguments are provided to
+`moodle-gift-gen`:
 
 ```
 $ moodle-gift-gen
