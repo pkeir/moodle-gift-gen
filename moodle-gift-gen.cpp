@@ -285,6 +285,14 @@ std::vector<std::string> upload_files(const std::vector<std::string> &filenames,
   // Setup all handles
   for (size_t i = 0; i < filenames.size(); ++i)
   {
+    // Check if file exists before attempting upload
+    std::ifstream file_check(filenames[i]);
+    if (!file_check.good())
+    {
+      throw std::runtime_error("File not found: " + filenames[i]);
+    }
+    file_check.close();
+
     handles[i].curl = curl_easy_init();
     if (!handles[i].curl)
     {
