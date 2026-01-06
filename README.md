@@ -115,7 +115,7 @@ Options:
 Examples:
   ./moodle-gift-gen --files file1.pdf file2.docx --num-questions 10
   ./moodle-gift-gen --interactive --files a.pdf --num-questions 5 --files b.txt c.md
-  ./moodle-gift-gen --prompt "Generate 7 C++ questions" --num-questions 7
+  ./moodle-gift-gen --prompt "Generate 7 C++ questions"
   ./moodle-gift-gen --quiet --gemini-api-key abc123 --output quiz.gift --files ../docs/*.pdf
 
 Environment:
