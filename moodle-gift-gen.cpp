@@ -733,7 +733,7 @@ Examples:
       << " --interactive --files a.pdf --num-questions 5 --files b.txt c.md\n"
          "  "
       << program_name
-      << " --prompt \"Generate 7 C++ questions\" --num-questions 7\n"
+      << " --prompt \"Generate 7 C++ questions\"\n"
          "  "
       << program_name
       << " --quiet --gemini-api-key abc123 --output quiz.gift --files "
