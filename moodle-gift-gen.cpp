@@ -1,6 +1,8 @@
 #include <algorithm>
+#include <chrono>
 #include <curl/curl.h>
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <iterator>
 #include <nlohmann/json.hpp>
@@ -26,7 +28,13 @@ json generate_quiz_schema()
   json schema = {
       {"type", "object"},
       {"properties",
-       {{"questions",
+       {{"category",
+         {{"type", "string"},
+          {"description",
+           "A short category name (less than 30 characters) based on the "
+           "context of the provided files and prompt. This should summarize "
+           "the topic or subject area of the questions."}}},
+        {"questions",
          {{"type", "array"},
           {"items",
            {{"type", "object"},
@@ -49,7 +57,7 @@ json generate_quiz_schema()
                  "Optional explanation for the correct answer"}}}}},
             {"required", json::array({"title", "question", "options",
                                       "correct_answer"})}}}}}}},
-      {"required", json::array({"questions"})}};
+      {"required", json::array({"category", "questions"})}};
   return schema;
 }
 
@@ -217,9 +225,43 @@ std::string get_mime_type(const std::string &filename)
     return "application/octet-stream"; // Default for unknown types
 }
 
-std::string convert_to_gift_format(const json &quiz_data)
+std::string get_timestamp_suffix()
+{
+  auto now = std::chrono::system_clock::now();
+  auto time_t_now = std::chrono::system_clock::to_time_t(now);
+  std::tm local_tm = *std::localtime(&time_t_now);
+
+  std::ostringstream oss;
+  oss << std::put_time(&local_tm, "%A %d-%m-%Y %H:%M:%S");
+  return oss.str();
+}
+
+std::string convert_to_gift_format(const json &quiz_data,
+                                   const std::string &context_override)
 {
   std::stringstream gift_output;
+
+  // Add category line at the top
+  std::string category;
+  if (!context_override.empty())
+  {
+    category = context_override;
+  }
+  else
+  {
+    if (quiz_data.contains("category"))
+    {
+      category = quiz_data["category"].get<std::string>();
+    }
+    else
+    {
+      category = "Quiz";
+    }
+    // Append timestamp to category only when LLM-generated
+    category += " " + get_timestamp_suffix();
+  }
+
+  gift_output << "\n$CATEGORY: " << category << "\n\n";
 
   for (const auto &question : quiz_data["questions"])
   {
@@ -463,7 +505,8 @@ void run_quiz_generation(const int num_questions,
                          const std::string &output_file = "",
                          const bool interactive = false,
                          const bool quiet = false,
-                         const std::string &custom_prompt = "")
+                         const std::string &custom_prompt = "",
+                         const std::string &context_override = "")
 {
   json schema = generate_quiz_schema();
   std::string query;
@@ -478,7 +521,9 @@ void run_quiz_generation(const int num_questions,
             " word, such as \"first\" or \"second\". When referring to an"
             " image, do this only using one or two words which relate to the"
             " content of the image itself; though vary (avoid) this if it"
-            " might help answer the question.";
+            " might help answer the question. Also generate a short category"
+            " name (less than 30 characters) that summarizes the topic or"
+            " subject area of the questions based on the provided context.";
 
   if (!custom_prompt.empty())
   {
@@ -559,7 +604,7 @@ void run_quiz_generation(const int num_questions,
       quiz_data = response_json;
     }
 
-    std::string gift_output = convert_to_gift_format(quiz_data);
+    std::string gift_output = convert_to_gift_format(quiz_data, context_override);
 
     if (interactive)
     {
@@ -720,6 +765,12 @@ Options:
                        of the image itself; though vary (avoid) this if it
                        might help answer the question.")
 
+  --context "TEXT"     Override the LLM-generated category name with custom text.
+                       The category appears at the top of the GIFT output and is
+                       used by Moodle to organize questions. If not specified,
+                       the LLM generates a short category name based on the
+                       content, with a timestamp automatically appended.
+
   --quiet              Suppress non-error output (except interactive prompts
                        and final GIFT output)
 
@@ -737,8 +788,10 @@ Examples:
          "  "
       << program_name
       << " --quiet --gemini-api-key abc123 --output quiz.gift --files "
-         "../inputs/*.pdf"
-         R"(
+         "../inputs/*.pdf\n"
+         "  "
+      << program_name
+      << R"( --context "Cellular Biology 1" --files cells.pdf --output bio.gift
 
 Environment:
   GEMINI_API_KEY       API key for Google Gemini (if --gemini-api-key not used)
@@ -755,6 +808,7 @@ struct CommandLineArgs
   std::string gemini_api_key;
   std::string output_file;
   std::string custom_prompt;
+  std::string context;
   bool interactive = false;
   bool quiet = false;
   bool num_questions_specified = false;
@@ -828,6 +882,15 @@ CommandLineArgs parse_command_line(int argc, char *argv[])
         throw std::runtime_error("--prompt requires a value");
       }
       args.custom_prompt = argv[i + 1];
+      ++i; // Skip the value
+    }
+    else if (arg == "--context")
+    {
+      if (i + 1 >= argc)
+      {
+        throw std::runtime_error("--context requires a value");
+      }
+      args.context = argv[i + 1];
       ++i; // Skip the value
     }
     else if (arg == "--files")
@@ -924,7 +987,7 @@ int main(int argc, char *argv[])
     {
       run_quiz_generation(args.num_questions, file_ids, api_key,
                           args.output_file, args.interactive, args.quiet,
-                          args.custom_prompt);
+                          args.custom_prompt, args.context);
     }
     catch (...)
     {

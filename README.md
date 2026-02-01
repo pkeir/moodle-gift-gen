@@ -109,6 +109,12 @@ Options:
                        of the image itself; though vary (avoid) this if it
                        might help answer the question.")
 
+  --context "TEXT"     Override the LLM-generated category name with custom text.
+                       The category appears at the top of the GIFT output and is
+                       used by Moodle to organize questions. If not specified,
+                       the LLM generates a short category name based on the
+                       content, with a timestamp automatically appended.
+
   --quiet              Suppress non-error output (except interactive prompts
                        and final GIFT output)
 
@@ -117,6 +123,7 @@ Examples:
   ./moodle-gift-gen --interactive --files a.pdf --num-questions 5 --files b.txt c.md
   ./moodle-gift-gen --prompt "Generate 7 C++ questions" --output cpp-quiz.gift
   ./moodle-gift-gen --quiet --gemini-api-key abc123 --output quiz.gift --files ../inputs/*.pdf
+  ./moodle-gift-gen --context "Cellular Biology 1" --files cells.pdf --output bio.gift
 
 Environment:
   GEMINI_API_KEY       API key for Google Gemini (if --gemini-api-key not used)
