@@ -128,33 +128,13 @@ std::string escape_gift_text(const std::string &text)
   std::string result;
   result.reserve(text.length() * 1.2); // Reserve extra space for escaping
 
-  bool in_code_segment = false;
-
-  for (size_t i = 0; i < text.length(); ++i)
+  for (const char c : text)
   {
-    const char c = text[i];
-
-    // Check for backtick to toggle code segment state
-    if (c == '`')
-    {
-      in_code_segment = !in_code_segment;
-      result += c;
-      continue;
-    }
-
-    // If we're in a code segment, don't escape anything
-    if (in_code_segment)
-    {
-      result += c;
-      continue;
-    }
-
-    // Escape GIFT control characters when not in code segments
+    // Escape GIFT control characters
     if (c == '{' || c == '}' || c == '#' || c == ':' || c == '~' || c == '=')
     {
       result += '\\';
     }
-
     result += c;
   }
 
