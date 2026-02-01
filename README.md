@@ -115,8 +115,8 @@ Options:
 Examples:
   ./moodle-gift-gen --files file1.pdf file2.docx --num-questions 10
   ./moodle-gift-gen --interactive --files a.pdf --num-questions 5 --files b.txt c.md
-  ./moodle-gift-gen --prompt "Generate 7 C++ questions"
-  ./moodle-gift-gen --quiet --gemini-api-key abc123 --output quiz.gift --files ../docs/*.pdf
+  ./moodle-gift-gen --prompt "Generate 7 C++ questions" --output cpp-quiz.gift
+  ./moodle-gift-gen --quiet --gemini-api-key abc123 --output quiz.gift --files ../inputs/*.pdf
 
 Environment:
   GEMINI_API_KEY       API key for Google Gemini (if --gemini-api-key not used)
